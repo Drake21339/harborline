@@ -251,41 +251,36 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.add
-      .text(
-        12,
-        12,
-        "WASD · E interact · F/J or LMB fire · Space brake · M map · P/Esc pause · F1/H help",
-        {
-          fontFamily: "monospace",
-          fontSize: "13px",
-          color: COLORS.uiText,
-          backgroundColor: "#00000088",
-          padding: { x: 8, y: 6 },
-        },
-      )
+      .text(12, 10, "WASD · E · F/J fire · Space brake · M map · P pause · H help", {
+        fontFamily: "monospace",
+        fontSize: "12px",
+        color: COLORS.uiMuted,
+        backgroundColor: "#00000099",
+        padding: { x: 8, y: 4 },
+      })
       .setScrollFactor(0)
       .setDepth(100);
 
     this.buildPauseAndHelp();
 
     this.hudText = this.add
-      .text(12, 40, "", {
+      .text(12, 36, "", {
         fontFamily: "monospace",
         fontSize: "14px",
         color: COLORS.uiText,
-        backgroundColor: "#00000088",
-        padding: { x: 8, y: 6 },
+        backgroundColor: "#00000099",
+        padding: { x: 8, y: 5 },
       })
       .setScrollFactor(0)
       .setDepth(100);
 
     this.heatHud = this.add
-      .text(12, 68, "", {
+      .text(12, 66, "", {
         fontFamily: "monospace",
         fontSize: "14px",
         color: "#ffb4b4",
-        backgroundColor: "#00000088",
-        padding: { x: 8, y: 6 },
+        backgroundColor: "#00000099",
+        padding: { x: 8, y: 5 },
       })
       .setScrollFactor(0)
       .setDepth(100);
@@ -489,9 +484,10 @@ export class GameScene extends Phaser.Scene {
     }
 
     const veh = this.vehicles.active;
+    const money = `$${this.wallet.cash} · sc ${this.wallet.score}`;
     if (veh) {
       this.hudText.setText(
-        `${veh.def.label} · HP ${Math.ceil(veh.state.health)} · spd ${Math.round(Math.abs(veh.state.speed))}${
+        `${veh.def.label} · HP ${Math.ceil(veh.state.health)} · spd ${Math.round(Math.abs(veh.state.speed))} · ${money}${
           veh.state.destroyed ? " · WRECKED" : ""
         }`,
       );
@@ -500,13 +496,13 @@ export class GameScene extends Phaser.Scene {
         reportOffense(this.heat, "destroy", now);
       }
     } else if (this.combat.health <= 0) {
-      this.hudText.setText("DOWN — press R for safehouse respawn");
+      this.hudText.setText(`DOWN — R safehouse · ${money}`);
     } else {
       const safe = isAtSafehouse(this.player.x, this.player.y, this.safehouse.x, this.safehouse.y)
         ? " · SAFEHOUSE"
         : "";
       this.hudText.setText(
-        `HP ${Math.ceil(this.combat.health)}/${this.combat.maxHealth} · Ammo ${this.combat.ammo} · $${this.wallet.cash}${safe}`,
+        `HP ${Math.ceil(this.combat.health)}/${this.combat.maxHealth} · Ammo ${this.combat.ammo} · ${money}${safe}`,
       );
     }
     const pips = "●".repeat(this.heat.level) + "○".repeat(Math.max(0, 5 - this.heat.level));
@@ -641,6 +637,7 @@ export class GameScene extends Phaser.Scene {
       this.aimLine.setVisible(false);
       const active = this.vehicles.active;
       if (active) this.cameras.main.startFollow(active.view, true, 0.14, 0.14);
+      audioBus.playSfx("engine");
       reportOffense(this.heat, "steal", this.time.now);
       this.civilians.signalDanger(this.player.x, this.player.y, this.time.now);
     }
@@ -896,6 +893,14 @@ export class GameScene extends Phaser.Scene {
       },
       signalDanger: () => {
         this.civilians.signalDanger(this.player.x, this.player.y, this.time.now);
+      },
+      sfxKinds: () => [...audioBus.playedKinds],
+      moveNearPickup: () => {
+        const p = this.pickups.pickups.find((x) => !x.collected) ?? this.pickups.pickups[0];
+        if (!p) return;
+        this.player.setPosition(p.x, p.y);
+        const body = this.player.body as Phaser.Physics.Arcade.Body;
+        body.reset(p.x, p.y);
       },
     };
   }

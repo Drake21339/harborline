@@ -11,6 +11,8 @@ declare global {
       moveNearFleet: () => void;
       setZoom: (z: number) => void;
       signalDanger: () => void;
+      sfxKinds: () => string[];
+      moveNearPickup: () => void;
     };
   }
 }

@@ -18,12 +18,17 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
   await page.waitForFunction(() => window.__GAME_DEBUG__?.bootCompleted === true, null, {
     timeout: 20_000,
   });
+  await page.waitForFunction(() => window.__GAME_DEBUG__?.scene === "TitleScene", null, {
+    timeout: 10_000,
+  });
+  await page.screenshot({ path: "test-results/title-brand.png", fullPage: true });
 
   // Keyboard-only start (no mouse required).
   await page.keyboard.press("Enter");
   await page.waitForFunction(() => window.__GAME_DEBUG__?.scene === "GameScene", null, {
     timeout: 10_000,
   });
+  await page.screenshot({ path: "test-results/game-hud.png", fullPage: true });
 
   const before = await page.evaluate(() => {
     const d = window.__GAME_DEBUG__;
@@ -143,6 +148,20 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
   expect(civ.peds).toBeGreaterThanOrEqual(1);
   expect(civ.cars).toBeLessThanOrEqual(50);
   expect(civ.cars).toBeGreaterThanOrEqual(1);
+
+  // ≥4 distinct SFX kinds on real actions after unlock (ui/shoot/engine/pickup).
+  await page.keyboard.down("f");
+  await page.waitForTimeout(120);
+  await page.keyboard.up("f");
+  await page.evaluate(() => {
+    window.__HARBOR_TEST__?.moveNearPickup();
+  });
+  await page.waitForTimeout(200);
+  const sfx = await page.evaluate(() => window.__HARBOR_TEST__?.sfxKinds() ?? []);
+  const distinct = new Set(sfx);
+  expect(distinct.size).toBeGreaterThanOrEqual(4);
+  expect(distinct.has("ui")).toBe(true);
+  expect(distinct.has("engine")).toBe(true);
 
   // District glance evidence (zoomed-out Midstack vantage shows ≥3 district palettes).
   await page.evaluate(() => {

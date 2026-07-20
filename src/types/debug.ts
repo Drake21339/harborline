@@ -24,6 +24,8 @@ export interface HarborTestHooks {
   moveNearFleet: () => void;
   setZoom: (z: number) => void;
   signalDanger: () => void;
+  sfxKinds: () => string[];
+  moveNearPickup: () => void;
 }
 
 declare global {

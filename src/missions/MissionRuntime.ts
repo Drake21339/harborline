@@ -37,22 +37,22 @@ export class MissionRuntime {
     scene.physics.add.existing(this.crate, true);
 
     this.acceptPrompt = scene.add
-      .text(12, 96, "", {
+      .text(12, 100, "", {
         fontFamily: "monospace",
         fontSize: "13px",
         color: COLORS.accent,
-        backgroundColor: "#00000088",
+        backgroundColor: "#00000099",
         padding: { x: 8, y: 4 },
       })
       .setScrollFactor(0)
       .setDepth(100);
 
     this.objectiveHud = scene.add
-      .text(12, 122, "", {
+      .text(12, 128, "", {
         fontFamily: "monospace",
         fontSize: "13px",
         color: COLORS.uiText,
-        backgroundColor: "#00000088",
+        backgroundColor: "#00000099",
         padding: { x: 8, y: 4 },
       })
       .setScrollFactor(0)

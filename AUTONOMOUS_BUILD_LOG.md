@@ -292,6 +292,29 @@ npm run test:e2e → 1 passed ~1.6s
 
 Presentation: title/HUD/audio/map (light interim readability).
 
+---
+
+## 2026-07-20 — Polish P4 Presentation (green)
+
+- Title: brand-first Harborline composition (gradient harbor + skyline cue), keyboard Enter CTA, version stamp.
+- HUD stack: controls → HP/ammo/cash/score → heat → mission accept/objective without overlap.
+- Minimap: roads/water/parks + clearer police/mission markers; M expand retained.
+- Audio: distinct synthesized SFX kinds (pickup/shoot/ui/arrest/engine) after gesture unlock; e2e proves ≥4 kinds on real actions.
+- Help/pause copy matches keyboard-first controls; mouse remains optional.
+- Evidence: `test-results/title-brand.png`, `test-results/game-hud.png`.
+
+### Verification (observed)
+
+```text
+npm run check → typecheck OK, lint OK
+npm run test → 39 passed
+npm run test:e2e → 1 passed ~2.0s (title+HUD screenshots + ≥4 SFX kinds)
+```
+
+### Next slice (Polish P5)
+
+Performance, full verify, README truth, completion report.
+
 ### Art direction pin (2026-07-20)
 
 - **Top-down 3D** is the presentation target (ADR-005 / `docs/ART-DIRECTION.md`).
