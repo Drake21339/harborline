@@ -483,3 +483,34 @@ Files present in `public/audio/`: title-theme, city-night, heat-chase, mission-w
 ### Next phase (Finish F6)
 
 Performance, verify, version 0.3.0, completion report.
+
+---
+
+## 2026-07-20 — Finish F6 Performance + verify + v0.3.0 strings (green) — Finish-Game DoD
+
+- Skid marks rate-limited (90ms) to cut tween spam; minimap base still cached; world paint once.
+- `GAME_VERSION` + `package.json` → **0.3.0** (git tag **not** created — Daniel tags later).
+- README + `docs/VERSIONS.md` + `docs/ART-DIRECTION.md` match Finish reality.
+- Full `npm run verify` green; e2e spine retained.
+
+### Verification (observed)
+
+```text
+npm run verify
+→ typecheck OK
+→ lint OK
+→ vitest: 49 passed (10 files)
+→ vite build OK (~1.78s)
+→ playwright: 1 passed ~2.9s (full smoke + finish proofs)
+```
+
+### Finish-Game Definition of Done
+
+Met for Harborline finish pass on pinned defaults (title/seed/tile/city). Soft leftovers documented under F3 (Phaser-flat vs true meshes). Tag `v0.3.0` pending Daniel.
+
+### Honest limits
+
+- Phaser faux top-down 3D, not a full Three.js/Babylon mesh city
+- Mission scripting still lightweight (no cinematic cutscenes)
+- FPS not profiled on low-end hardware beyond e2e headless Chromium
+- “Fun” is playable with unit/e2e proofs — Daniel’s ear/eye is final

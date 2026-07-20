@@ -16,9 +16,9 @@ Not the hard term: “2.5D” (too ambiguous). Casual nickname only.
 - Buildings/cars/people can be real 3D meshes (or strong faux-3D) with height, lighting, and readable facades
 - Camera does **not** become free third-person orbit like GTA III+
 
-## Current build
+## Current build (v0.3.0 Finish)
 
-Phaser flat primitives / painted tiles = **interim playable stand-in**. Do not treat that look as the final art goal (ADR-005 in vault `DECISIONS.md`).
+Phaser **faux top-down 3D** under a locked camera: building roof/face/shadow/windows, district palettes, vehicle cabin/headlight/shadow cues, brand-first title, arcade HUD. Still not a full mesh engine — that remains optional last resort (ADR-005 / finish AFK).
 
 ## For agents
 

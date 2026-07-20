@@ -29,6 +29,7 @@ export class VehicleRuntime {
   activeId: string | null = null;
   /** Cleared by GameScene after juice (camera nudge / skid). */
   lastImpact: { impactSpeed: number; damage: number; x: number; y: number } | null = null;
+  private lastSkidAt = 0;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -149,8 +150,10 @@ export class VehicleRuntime {
             });
           }
         }
-        // Handbrake skid marks at speed (arcade juice, not physics tire model).
-        if (input.handbrake && Math.abs(v.state.speed) > 70) {
+        // Handbrake skid marks at speed (rate-limited — avoid tween spam).
+        const nowMs = Date.now();
+        if (input.handbrake && Math.abs(v.state.speed) > 70 && nowMs - this.lastSkidAt > 90) {
+          this.lastSkidAt = nowMs;
           const mark = this.scene.add
             .rectangle(v.state.x, v.state.y, 10, 4, 0x1a1a1a, 0.35)
             .setDepth(3)

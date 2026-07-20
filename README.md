@@ -76,11 +76,11 @@ Pause **ambience** volume controls music beds; **sfx** covers synthesized action
 
 ## Mission types (one each)
 
-1. **Pier Packet** — timed courier (intro near spawn)
-2. **Yellow Line** — steal Harbor Cab → drop
-3. **Cool Off** — raise heat, escape until clear
-4. **Harbor Hops** — multi-stop packages
-5. **Crate Crack** — destruction (auto-completes if target already gone)
+1. **Pier Packet** — hot parcel courier: pick up, keep it through hits/arrests, timed drop
+2. **Yellow Line** — steal Harbor Cab (heat spike), keep HP floor, drop outside arrest range
+3. **Cool Off** — raise heat, then hide (faster cool near safehouse/park)
+4. **Harbor Hops** — mixed stops: timed / vehicle-required / contested hold
+5. **Crate Crack** — ram or shoot crate (smash raises heat); soft-lock if already gone
 
 ## Versions
 
@@ -89,12 +89,15 @@ Historical builds are git tags — see [`docs/VERSIONS.md`](/Users/danielkirkpat
 ```bash
 ./scripts/play-version.sh v0.1.0   # first playable DoD
 ./scripts/play-version.sh v0.2.0   # systems polish bookmark
+# v0.3.0 — Finish-Game strings on main; tag when Daniel is happy
 ```
+
+Current UI label: **v0.3.0** (Finish-Game product pass).
 
 ## Testing
 
-- Unit: RNG, worldgen, combat, vehicles (incl. world collision), civilian tile bias, pickups, heat, missions (all five types), save validation
-- E2E: boot → title → start → move → intro + non-intro mission accepts → enter/drive/exit → civilians/caps → SFX kinds → pause/resume → refresh re-entry → screenshots
+- Unit: RNG, worldgen, combat, vehicles (incl. world collision), civilian tile bias, pickups, heat, missions (all five types + fails), audioTracks, save validation
+- E2E: boot → title → start → move → intro + non-intro mission accepts → enter/drive/exit → civilians/caps → SFX + Suno beds → HUD/pause/help/minimap screenshots → pause/resume → refresh re-entry
 
 ## Architecture
 
