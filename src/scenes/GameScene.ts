@@ -13,7 +13,15 @@ import {
 } from "../systems/playerCombat";
 import type { CombatantState } from "../systems/combatTypes";
 import { CivilianRuntime } from "../systems/CivilianRuntime";
+import {
+  applyArrestPenalties,
+  createHeatState,
+  reportOffense,
+  tickHeat,
+  type HeatState,
+} from "../systems/heat";
 import { PickupRuntime } from "../systems/PickupRuntime";
+import { PoliceRuntime } from "../systems/PoliceRuntime";
 import { createWallet, isAtSafehouse, respawnAtSafehouse, type WalletState } from "../systems/pickups";
 import { VehicleRuntime } from "../vehicles/VehicleRuntime";
 import { generateWorld } from "../world/generateWorld";
@@ -34,8 +42,12 @@ export class GameScene extends Phaser.Scene {
   private vehicles!: VehicleRuntime;
   private civilians!: CivilianRuntime;
   private pickups!: PickupRuntime;
+  private police!: PoliceRuntime;
+  private heat!: HeatState;
   private wallet!: WalletState;
   private safehouse = { x: 0, y: 0 };
+  private heatHud!: Phaser.GameObjects.Text;
+  private reportedWreckIds = new Set<string>();
   private readonly keysDown = new Set<string>();
   private removeKeyListeners: (() => void) | null = null;
   private districtToast!: Phaser.GameObjects.Text;
@@ -77,6 +89,8 @@ export class GameScene extends Phaser.Scene {
     this.vehicles = new VehicleRuntime(this, this.world);
     this.vehicles.spawnFleet(spawnX, spawnY);
     this.civilians = new CivilianRuntime(this, this.world);
+    this.police = new PoliceRuntime(this);
+    this.heat = createHeatState();
     this.wallet = createWallet();
     this.pickups = new PickupRuntime(this, spawnX, spawnY);
     // Safehouse: Midstack plaza west pad.
@@ -186,6 +200,17 @@ export class GameScene extends Phaser.Scene {
         fontFamily: "monospace",
         fontSize: "14px",
         color: COLORS.uiText,
+        backgroundColor: "#00000088",
+        padding: { x: 8, y: 6 },
+      })
+      .setScrollFactor(0)
+      .setDepth(100);
+
+    this.heatHud = this.add
+      .text(12, 68, "", {
+        fontFamily: "monospace",
+        fontSize: "14px",
+        color: "#ffb4b4",
         backgroundColor: "#00000088",
         padding: { x: 8, y: 6 },
       })
@@ -308,6 +333,22 @@ export class GameScene extends Phaser.Scene {
 
     this.updateProjectiles();
     this.civilians.update(now, this.player.x, this.player.y, dt);
+    this.police.update(this.heat.level, this.player.x, this.player.y, dt, now);
+    if (this.heat.level >= 2) {
+      this.civilians.signalSiren(now, 500);
+    }
+    const heatTick = tickHeat(
+      this.heat,
+      dt * 1000,
+      this.police.isPlayerSeen,
+      this.police.inArrestRange,
+    );
+    if (heatTick.arrested) {
+      this.handleArrest();
+    }
+    // Cleanup units when cold.
+    if (this.heat.level === 0) this.police.clearAll();
+
     this.pickups.update(
       now,
       this.player.x,
@@ -337,6 +378,10 @@ export class GameScene extends Phaser.Scene {
           veh.state.destroyed ? " · WRECKED" : ""
         }`,
       );
+      if (veh.state.destroyed && !this.reportedWreckIds.has(veh.state.id)) {
+        this.reportedWreckIds.add(veh.state.id);
+        reportOffense(this.heat, "destroy", now);
+      }
     } else if (this.combat.health <= 0) {
       this.hudText.setText("DOWN — press R for safehouse respawn");
     } else {
@@ -347,6 +392,14 @@ export class GameScene extends Phaser.Scene {
         `HP ${Math.ceil(this.combat.health)}/${this.combat.maxHealth} · Ammo ${this.combat.ammo} · $${this.wallet.cash}${safe}`,
       );
     }
+    const pips = "●".repeat(this.heat.level) + "○".repeat(Math.max(0, 5 - this.heat.level));
+    this.heatHud.setText(
+      this.heat.level > 0
+        ? `HEAT ${pips}  cops ${this.police.activeCount}${
+            this.police.inArrestRange ? " · ARRESTING" : ""
+          }`
+        : "HEAT ○○○○○",
+    );
     this.publishDebug();
   }
 
@@ -367,7 +420,23 @@ export class GameScene extends Phaser.Scene {
       this.aimLine.setVisible(false);
       const active = this.vehicles.active;
       if (active) this.cameras.main.startFollow(active.view, true, 0.14, 0.14);
+      reportOffense(this.heat, "steal", this.time.now);
+      this.civilians.signalDanger(this.player.x, this.player.y, this.time.now);
     }
+  }
+
+  private handleArrest(): void {
+    const pen = applyArrestPenalties(this.wallet.cash);
+    this.wallet.cash = pen.cash;
+    this.wallet.score = Math.max(0, this.wallet.score - pen.scorePenalty);
+    this.heat = createHeatState();
+    this.police.clearAll();
+    if (this.vehicles.activeId) this.vehicles.tryExit();
+    const pos = respawnAtSafehouse(this.combat, this.safehouse.x, this.safehouse.y);
+    this.player.setPosition(pos.x, pos.y);
+    this.player.setVisible(true);
+    this.aimLine.setVisible(true);
+    this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
   }
 
   private tryAttack(): void {
@@ -378,6 +447,7 @@ export class GameScene extends Phaser.Scene {
       consumeRangedShot(this.combat, now);
       this.spawnProjectile();
       this.civilians.signalDanger(this.player.x, this.player.y, now);
+      reportOffense(this.heat, "attack", now);
       return;
     }
 
@@ -386,6 +456,7 @@ export class GameScene extends Phaser.Scene {
       this.flashMeleeArc();
       this.tryHitscanDummy(COMBAT.meleeRange, COMBAT.meleeDamage);
       this.civilians.signalDanger(this.player.x, this.player.y, now, 90);
+      reportOffense(this.heat, "attack", now);
     }
   }
 
@@ -494,12 +565,12 @@ export class GameScene extends Phaser.Scene {
       vehicle: veh
         ? { speed: veh.state.speed, health: veh.state.health }
         : null,
-      heat: 0,
+      heat: this.heat.level,
       mission: { id: null, objective: null },
       counts: {
         pedestrians: this.civilians.counts.pedestrians,
         traffic: this.civilians.counts.traffic,
-        police: 0,
+        police: this.police.activeCount,
       },
       fps: Math.round(this.game.loop.actualFps),
     });

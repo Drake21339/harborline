@@ -136,3 +136,23 @@ npm run test:e2e → 1 passed ~1.1s
 ### Next slice (Build Order #7)
 
 Heat 0–5, police pursuit, arrest, decay.
+
+---
+
+## 2026-07-20 — Slice 7 Heat/Police (green)
+
+- Heat 0–5 with offense gain (attack/steal/crash/destroy/reoffend), unseen decay, arrest hold.
+- Foot+car police pool capped by heat; money penalty + safehouse respawn on arrest.
+- HUD heat pips; `__GAME_DEBUG__.heat` + police counts; unit tests green.
+
+### Verification (observed)
+
+```text
+npm run check → OK
+npm run test → 20 passed (incl. 4 heat)
+npm run test:e2e → 1 passed ~1.1s
+```
+
+### Next slice (Build Order #8)
+
+Five distinct missions + mission manager.
