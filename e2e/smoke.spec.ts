@@ -25,6 +25,7 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
   await page.screenshot({ path: "test-results/title-brand.png", fullPage: true });
   await page.screenshot({ path: "test-results/finish/title-2.png", fullPage: true });
   await page.screenshot({ path: "test-results/beauty/title-brand.png", fullPage: true });
+  await page.screenshot({ path: "test-results/beauty/title-brand-2.png", fullPage: true });
 
   // Keyboard-only start (no mouse required).
   await page.keyboard.press("Enter");
@@ -35,6 +36,8 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
   await page.screenshot({ path: "test-results/finish/game-hud-1.png", fullPage: true });
   await page.screenshot({ path: "test-results/finish/world-midstack-3.png", fullPage: true });
   await page.screenshot({ path: "test-results/beauty/world-midstack-1.png", fullPage: true });
+  await page.screenshot({ path: "test-results/beauty/night-atmosphere-1.png", fullPage: true });
+  await page.screenshot({ path: "test-results/beauty/spawn-plaza-1.png", fullPage: true });
   // Dense Midstack block for 3D building depth read.
   await page.evaluate(() => {
     const t = window.__HARBOR_TEST__;

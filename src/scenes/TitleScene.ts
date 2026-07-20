@@ -15,49 +15,55 @@ export class TitleScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.paintBackdrop(width, height);
 
-    // Brand-first: Harborline is the only hero-level signal.
+    // Brand-first: Harborline is the only hero-level signal (nothing else may outsize it).
     const brand = this.add
-      .text(width / 2, height * 0.3, GAME_TITLE, {
+      .text(width / 2, height * 0.28, GAME_TITLE, {
         fontFamily: '"Courier New", Courier, monospace',
-        fontSize: "86px",
-        color: "#9ef0c0",
-        stroke: "#061018",
-        strokeThickness: 8,
+        fontSize: "104px",
+        color: "#b8f5d4",
+        stroke: "#040c14",
+        strokeThickness: 10,
       })
       .setOrigin(0.5)
       .setDepth(20);
 
     // Soft brand underglow (warm sodium, not purple neon).
     const glow = this.add
-      .ellipse(width / 2, height * 0.32, 420, 48, 0xc8a060, 0.12)
+      .ellipse(width / 2, height * 0.3, 520, 56, 0xd0a050, 0.14)
       .setDepth(19);
     this.tweens.add({
       targets: glow,
-      alpha: 0.22,
+      alpha: 0.28,
+      scaleX: 1.06,
       yoyo: true,
-      duration: 2200,
+      duration: 2400,
       repeat: -1,
     });
     this.tweens.add({
       targets: brand,
-      y: brand.y - 4,
+      y: brand.y - 5,
       yoyo: true,
-      duration: 2800,
+      duration: 3000,
       repeat: -1,
       ease: "Sine.easeInOut",
     });
 
+    // Gold pier rule under the wordmark — Harborline motif.
+    this.add
+      .rectangle(width / 2, height * 0.38, Math.min(420, width * 0.55), 3, 0xc8b84a, 0.75)
+      .setDepth(20);
+
     this.add
       .text(width / 2, height * 0.44, "Harbor city. Open streets. One more job.", {
         fontFamily: "monospace",
-        fontSize: "20px",
-        color: "#d8e2f0",
+        fontSize: "18px",
+        color: "#b8c8d8",
       })
       .setOrigin(0.5)
       .setDepth(20);
 
     const cta = this.add
-      .text(width / 2, height * 0.58, "ENTER — start", {
+      .text(width / 2, height * 0.56, "ENTER — start", {
         fontFamily: "monospace",
         fontSize: "22px",
         color: "#f2e6c8",

@@ -134,12 +134,12 @@ export class WorldRenderer3D {
     cam.lookAt(0, 0, 0);
     this.camera = cam;
 
-    const ambient = new THREE.AmbientLight(0xc0d4e8, 0.85);
-    const sun = new THREE.DirectionalLight(0xfff2d0, 1.35);
-    sun.position.set(-220, 520, -180);
-    const fill = new THREE.DirectionalLight(0x88b0d0, 0.55);
-    fill.position.set(180, 280, 120);
-    const sodium = new THREE.HemisphereLight(0xe0c070, 0x243848, 0.45);
+    const ambient = new THREE.AmbientLight(0xa8c0d8, 0.72);
+    const sun = new THREE.DirectionalLight(0xffe8c0, 1.45);
+    sun.position.set(-240, 560, -200);
+    const fill = new THREE.DirectionalLight(0x6a98b8, 0.5);
+    fill.position.set(200, 260, 140);
+    const sodium = new THREE.HemisphereLight(0xe8c878, 0x1a3048, 0.55);
     scene.add(ambient, sun, fill, sodium);
 
     this.root = new THREE.Group();
@@ -147,7 +147,40 @@ export class WorldRenderer3D {
     scene.add(this.root, this.entityRoot);
 
     this.buildCity(world);
+    this.placeStreetGlow(world);
     this.setViewSize(this.viewW, this.viewH);
+  }
+
+  /** Cheap sodium point lights near plazas / midstack — atmosphere without a post stack. */
+  private placeStreetGlow(world: GeneratedWorld): void {
+    if (!this.scene || !this.root) return;
+    const ts = world.tileSize;
+    let placed = 0;
+    for (let ty = 8; ty < world.height && placed < 48; ty += 10) {
+      for (let tx = 8; tx < world.width && placed < 48; tx += 12) {
+        const tile = world.tiles[ty * world.width + tx]!;
+        if (tile !== Tile.Sidewalk && tile !== Tile.Plaza) continue;
+        const d = districtAt(world, tx, ty);
+        if (!d || (d.id !== "midstack" && d.id !== "pier-ward")) continue;
+        const x = tx * ts + ts / 2;
+        const z = ty * ts + ts / 2;
+        const warm = d.id === "midstack";
+        const light = new THREE.PointLight(warm ? 0xffc060 : 0x88c0e0, 0.85, 140, 2);
+        light.position.set(x, 28, z);
+        this.scene.add(light);
+        const bulb = new THREE.Mesh(
+          new THREE.SphereGeometry(2.2, 6, 4),
+          new THREE.MeshStandardMaterial({
+            color: warm ? 0xffe0a0 : 0xc0e8ff,
+            emissive: warm ? 0xffaa40 : 0x60a0c0,
+            emissiveIntensity: 1.2,
+          }),
+        );
+        bulb.position.set(x, 22, z);
+        this.root.add(bulb);
+        placed += 1;
+      }
+    }
   }
 
   setViewSize(w: number, h: number): void {

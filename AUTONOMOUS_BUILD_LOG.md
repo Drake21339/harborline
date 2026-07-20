@@ -577,3 +577,27 @@ npm run test:e2e → 1 passed ~1.0m (paint assert + beauty screenshots)
 ### Next phase (Beauty G3)
 
 Light, atmosphere, title brand.
+
+---
+
+## 2026-07-20 — Graphics Beauty G3 Light / atmosphere / title (green)
+
+Street sodium point lights + hemisphere night balance; title brand enlarged with pier gold rule.
+
+| Surface | Verdict | Evidence | Notes |
+|---|---|---|---|
+| title-brand | **PASS** | `test-results/beauty/title-brand-2.png` | Harborline hero wordmark, night harbor skyline, ENTER CTA — brand-first |
+| night-atmosphere | **PASS** (soft leftover) | `test-results/beauty/night-atmosphere-1.png` | Cool harbor + warm sodium pools; still dark ortho crush on some blocks |
+| spawn-plaza | **PASS** | `test-results/beauty/spawn-plaza-1.png` | Plaza read with fleet + mission marker under night lights |
+
+### Verification (observed)
+
+```text
+npm run check → typecheck OK, lint OK
+npm run test → 60 passed
+npm run test:e2e → 1 passed ~1.3m
+```
+
+### Next phase (Beauty G4)
+
+HUD harmony + npm run verify + version 0.4.1 + completion report.
