@@ -1,7 +1,7 @@
 export interface GameDebugSnapshot {
   bootCompleted: boolean;
   scene: string;
-  player: { x: number; y: number };
+  player: { x: number; y: number; health?: number; ammo?: number; facing?: number };
   inVehicle: boolean;
   vehicle: { speed: number; health: number } | null;
   heat: number;

@@ -57,3 +57,23 @@ npm run test:e2e → 1 passed (boots, starts, moves) ~1.1s
 ### Next slice (Build Order #3)
 
 On-foot loop: sprint, mouse aim, ranged+melee, health/i-frames.
+
+---
+
+## 2026-07-20 — Slice 3 On-foot (green)
+
+- Mouse aim facing + aim stub; LMB/F ranged projectiles with ammo; melee fallback when empty.
+- Health + i-frames + damage flash; HUD stub; `__GAME_DEBUG__.player.health/ammo/facing`.
+- Plaza hazard (contact damage) + sparring dummy (hit proof); R respawn stub when down.
+
+### Verification (observed)
+
+```text
+npm run check → OK
+npm run test → 9 passed (incl. 3 combat)
+npm run test:e2e → 1 passed ~627ms
+```
+
+### Next slice (Build Order #4)
+
+Six vehicle archetypes; enter/exit; arcade drive; damage stages.
