@@ -15,12 +15,13 @@ const MAX_POOL = 5;
 export class PoliceRuntime {
   private readonly units: Cop[] = [];
   private seenPlayer = false;
+  private overlayVisible = true;
 
   constructor(scene: Phaser.Scene) {
     for (let i = 0; i < MAX_POOL; i += 1) {
       const inCar = i % 2 === 1;
       const view = scene.add
-        .rectangle(0, 0, inCar ? 26 : 14, 14, 0x3a5cff)
+        .rectangle(0, 0, inCar ? 52 : 14, inCar ? 26 : 14, 0x3a5cff)
         .setDepth(9)
         .setVisible(false);
       this.units.push({
@@ -50,6 +51,13 @@ export class PoliceRuntime {
     return this.units.some((u) => u.active && u.near);
   }
 
+  setOverlayVisible(visible: boolean): void {
+    this.overlayVisible = visible;
+    for (const u of this.units) {
+      u.view.setAlpha(visible && u.active ? 1 : 0);
+    }
+  }
+
   update(
     heatLevel: number,
     playerX: number,
@@ -77,6 +85,10 @@ export class PoliceRuntime {
       }
       u.view.setPosition(u.x, u.y);
       u.view.setRotation(u.inCar ? Math.atan2(dy, dx) : 0);
+      if (!this.overlayVisible) {
+        u.view.setAlpha(0);
+        continue;
+      }
       // Readable pursuit: white/red strobe when hot; solid red in arrest range.
       if (u.near) {
         u.view.setFillStyle(0xff3333);
@@ -91,6 +103,7 @@ export class PoliceRuntime {
         u.view.setFillStyle(0x3a5cff);
         u.view.setScale(1);
       }
+      u.view.setAlpha(1);
     }
   }
 

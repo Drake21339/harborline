@@ -50,6 +50,10 @@ describe("heat", () => {
     expect(applyArrestPenalties(200).cash).toBeLessThan(200);
   });
 
+  it("exposes a crash speed threshold above casual bumps", () => {
+    expect(HEAT.crashSpeedThreshold).toBeGreaterThan(55);
+  });
+
   it("decayScale > 1 cools faster; < 1 cools slower", () => {
     const fast = createHeatState();
     reportOffense(fast, "steal", 0);

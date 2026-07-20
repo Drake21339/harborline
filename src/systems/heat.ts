@@ -17,6 +17,8 @@ export const HEAT = {
   decayUnseenMs: 6000,
   arrestHoldMs: 1800,
   arrestRange: 36,
+  /** Soft bump under this impact speed does not raise heat. */
+  crashSpeedThreshold: 90,
   offenseGain: {
     attack: 1,
     steal: 1,

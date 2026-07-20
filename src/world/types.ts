@@ -1,3 +1,4 @@
+import type { NavGraph } from "./navGraph";
 import type { TileId } from "./tileTypes";
 
 export interface DistrictDef {
@@ -26,16 +27,27 @@ export interface CollisionRect {
   h: number;
 }
 
+export interface PaintShop {
+  id: string;
+  x: number;
+  y: number;
+  fee: number;
+}
+
 export interface GeneratedWorld {
   seed: string;
   width: number;
   height: number;
   tileSize: number;
   tiles: Uint8Array;
+  /** Parallel to tiles: RoadClass id per cell. */
+  roadClass: Uint8Array;
   districts: DistrictDef[];
   spawn: WorldSpawn;
-  /** Merged solid AABBs in pixel space (centered Phaser rects use x,y as center). */
+  /** Merged solid AABBs in pixel space. */
   collisionRects: CollisionRect[];
+  nav: NavGraph;
+  paintShops: PaintShop[];
   fingerprint: string;
 }
 
