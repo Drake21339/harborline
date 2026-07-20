@@ -16,11 +16,12 @@ Not the hard term: “2.5D” (too ambiguous). Casual nickname only.
 - Buildings/cars/people are real 3D meshes with height, lighting, and readable facades (ADR-009)
 - Camera does **not** become free third-person orbit like GTA III+
 
-## Current build (v0.4.0 City Depth)
+## Current build (v0.4.1 Graphics Beauty)
 
-- **Three.js** orthographic mesh city under Phaser HUD/input/physics (ADR-009)
-- Road hierarchy: local 2-lane, arterial 4-lane, freeway (6 + median)
-- Person-sized peds / car-sized vehicles; graph-following NPC traffic
+- **Three.js** orthographic mesh city under **transparent** Phaser HUD/input/physics (ADR-009)
+- District height/color bands, road-class markings, sodium street glow
+- Archetype vehicle silhouettes + ped/cop body cues; paint-shop tint on meshes
+- Brand-first title (Harborline hero wordmark + pier motif)
 - Fallback: baked Phaser `paintWorldTexture` if WebGL cannot start
 
 ## For agents

@@ -34,6 +34,7 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
   });
   await page.screenshot({ path: "test-results/game-hud.png", fullPage: true });
   await page.screenshot({ path: "test-results/finish/game-hud-1.png", fullPage: true });
+  await page.screenshot({ path: "test-results/beauty/game-hud-harmony-1.png", fullPage: true });
   await page.screenshot({ path: "test-results/finish/world-midstack-3.png", fullPage: true });
   await page.screenshot({ path: "test-results/beauty/world-midstack-1.png", fullPage: true });
   await page.screenshot({ path: "test-results/beauty/night-atmosphere-1.png", fullPage: true });

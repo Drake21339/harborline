@@ -601,3 +601,38 @@ npm run test:e2e → 1 passed ~1.3m
 ### Next phase (Beauty G4)
 
 HUD harmony + npm run verify + version 0.4.1 + completion report.
+
+---
+
+## 2026-07-20 — Graphics Beauty G4 HUD + verify + v0.4.1 (green) — Beauty DoD
+
+- HUD retained from Finish F4; harmony screenshot over live 3D city.
+- `GAME_VERSION` + `package.json` → **0.4.1** (git tag **not** created — Daniel tags later).
+- Docs: `docs/VERSIONS.md`, `docs/ART-DIRECTION.md` updated.
+- Full `npm run verify` green.
+
+| Surface | Verdict | Evidence |
+|---|---|---|
+| game-hud-harmony | **PASS** | `test-results/beauty/game-hud-harmony-1.png` — chrome readable over 3D world |
+
+### Verification (observed)
+
+```text
+npm run verify
+→ typecheck OK
+→ lint OK
+→ vitest: 60 passed (12 files)
+→ vite build OK (~2.50s)
+→ playwright: 1 passed ~1.4m (missions/vehicle/paint/beauty screenshots)
+```
+
+### Graphics Beauty Definition of Done
+
+Met on pinned defaults. Soft leftovers logged under G1–G3 (ortho top-down flattens side facades; night crush on some blocks). Tag `v0.4.1` pending Daniel.
+
+### Honest leftovers
+
+- Pure top-down ortho still under-sells building side facades vs a slight isometric tilt (camera lock preserved on purpose)
+- Street sodium count capped for perf; low-end FPS not profiled beyond e2e Chromium
+- Ped heads read as dots at far zoom; fine at mid zoom
+- Early Phaser-only G1 commit `e0f53aa` superseded by 3D path after City Depth merge
