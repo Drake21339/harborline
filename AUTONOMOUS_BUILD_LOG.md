@@ -514,3 +514,31 @@ Met for Harborline finish pass on pinned defaults (title/seed/tile/city). Soft l
 - Mission scripting still lightweight (no cinematic cutscenes)
 - FPS not profiled on low-end hardware beyond e2e headless Chromium
 - “Fun” is playable with unit/e2e proofs — Daniel’s ear/eye is final
+
+---
+
+## 2026-07-20 — Graphics Beauty G1 City mesh character (green)
+
+**Foundation note:** `origin/main` has no `src/render3d/WorldRenderer3D.ts` / Three.js / ADR-009. Beauty AFK polishes the sole Phaser faux top-down 3D path (`paintWorldTexture`). Slice brief: `docs/GROK-GRAPHICS-BEAUTY-SLICES.md`.
+
+Art-director loop: midstack×3, district×2, roads×2 (under max 5).
+
+| Surface | Verdict | Evidence | Notes |
+|---|---|---|---|
+| world-midstack | **PASS** (soft leftover) | `test-results/beauty/world-midstack-3.png` | Extruded south/east walls + lit windows + shadows; still Phaser paint vs true meshes |
+| world-district-contrast | **PASS** | `test-results/beauty/world-district-contrast-2.png` | ≥3 glance-distinct palettes (pier teal / mid olive / freight rust / greenbelt / ridge tan) |
+| world-roads-close | **PASS** | `test-results/beauty/world-roads-close-2.png` | Arterial double-gold dashes vs intersection zebra; freight/waterfront classes unit-tested |
+
+Upgrades: `classifyRoad` visual classes; district mass heights; extruded building recipe; pier boardwalk / sodium pools; night vignette.
+
+### Verification (observed)
+
+```text
+npm run check → typecheck OK, lint OK
+npm run test → 52 passed (incl. 3 classifyRoad)
+npm run test:e2e → 1 passed ~3.4s (beauty screenshots written)
+```
+
+### Next phase (Beauty G2)
+
+Vehicles + people silhouettes + paint tint.

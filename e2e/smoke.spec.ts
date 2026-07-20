@@ -23,6 +23,7 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
   });
   await page.screenshot({ path: "test-results/title-brand.png", fullPage: true });
   await page.screenshot({ path: "test-results/finish/title-2.png", fullPage: true });
+  await page.screenshot({ path: "test-results/beauty/title-brand.png", fullPage: true });
 
   // Keyboard-only start (no mouse required).
   await page.keyboard.press("Enter");
@@ -32,6 +33,21 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
   await page.screenshot({ path: "test-results/game-hud.png", fullPage: true });
   await page.screenshot({ path: "test-results/finish/game-hud-1.png", fullPage: true });
   await page.screenshot({ path: "test-results/finish/world-midstack-3.png", fullPage: true });
+  await page.screenshot({ path: "test-results/beauty/world-midstack-1.png", fullPage: true });
+  await page.screenshot({ path: "test-results/beauty/world-midstack-2.png", fullPage: true });
+  // Dense Midstack block (not open plaza) for building depth read.
+  await page.evaluate(() => {
+    const t = window.__HARBOR_TEST__;
+    if (!t) throw new Error("missing test hooks");
+    t.movePlayer(72 * 32 + 16, 40 * 32 + 16);
+    t.setZoom(1.45);
+  });
+  await page.waitForTimeout(120);
+  await page.screenshot({ path: "test-results/beauty/world-midstack-3.png", fullPage: true });
+  await page.evaluate(() => {
+    window.__HARBOR_TEST__?.setZoom(1);
+    window.__HARBOR_TEST__?.moveNearFleet();
+  });
 
   await page.keyboard.press("m");
   await page.waitForTimeout(200);
@@ -158,6 +174,7 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
   });
   await page.waitForTimeout(150);
   await page.screenshot({ path: "test-results/finish/vehicle-fleet-close-2.png", fullPage: true });
+  await page.screenshot({ path: "test-results/beauty/vehicle-fleet-close-1.png", fullPage: true });
 
   await page.evaluate(() => {
     window.__HARBOR_TEST__?.setZoom(0.28);
@@ -165,6 +182,17 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
   await page.waitForTimeout(200);
   await page.screenshot({ path: "test-results/districts-read.png", fullPage: true });
   await page.screenshot({ path: "test-results/finish/world-district-contrast-2.png", fullPage: true });
+  await page.screenshot({ path: "test-results/beauty/world-district-contrast-1.png", fullPage: true });
+  await page.screenshot({ path: "test-results/beauty/world-district-contrast-2.png", fullPage: true });
+
+  // Road-class close read (plaza arterials / dashes).
+  await page.evaluate(() => {
+    window.__HARBOR_TEST__?.setZoom(1.6);
+    window.__HARBOR_TEST__?.moveNearFleet();
+  });
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: "test-results/beauty/world-roads-close-1.png", fullPage: true });
+  await page.screenshot({ path: "test-results/beauty/world-roads-close-2.png", fullPage: true });
   await page.evaluate(() => {
     window.__HARBOR_TEST__?.setZoom(1);
   });
