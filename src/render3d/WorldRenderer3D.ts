@@ -24,44 +24,44 @@ const DISTRICT_STYLE: Record<
   { face: number; roof: number; trim: number; window: number; baseH: number; varH: number }
 > = {
   "pier-ward": {
-    face: 0x6a8aa0,
-    roof: 0x243848,
-    trim: 0xb0d0e0,
-    window: 0xc8f0ff,
-    baseH: 14,
-    varH: 16,
+    face: 0x7aa0b8,
+    roof: 0x3a5870,
+    trim: 0xc8e8f8,
+    window: 0xe0ffff,
+    baseH: 16,
+    varH: 18,
   },
   midstack: {
-    face: 0xa89878,
-    roof: 0x2a2820,
-    trim: 0xe8dcb0,
+    face: 0xc8b890,
+    roof: 0x5a5440,
+    trim: 0xfff0c0,
     window: 0xffe8a8,
-    baseH: 28,
-    varH: 36,
+    baseH: 30,
+    varH: 38,
   },
   "ridge-hollow": {
-    face: 0x8e7450,
-    roof: 0x2e2010,
-    trim: 0xe0b878,
-    window: 0xf0d090,
+    face: 0xc89860,
+    roof: 0x6a4828,
+    trim: 0xffd090,
+    window: 0xffe0a0,
     baseH: 18,
     varH: 22,
   },
   "freight-cut": {
-    face: 0x8a5230,
-    roof: 0x24180c,
-    trim: 0xf0a040,
-    window: 0xffb060,
+    face: 0xc87040,
+    roof: 0x5a3020,
+    trim: 0xffb060,
+    window: 0xffd080,
     baseH: 12,
-    varH: 10,
+    varH: 12,
   },
   greenbelt: {
-    face: 0x4a6e42,
-    roof: 0x162816,
-    trim: 0x98d080,
-    window: 0xc0f0a0,
+    face: 0x6a9860,
+    roof: 0x2a5830,
+    trim: 0xb8f0a0,
+    window: 0xd0ffb0,
     baseH: 10,
-    varH: 8,
+    varH: 10,
   },
 };
 
@@ -115,6 +115,7 @@ export class WorldRenderer3D {
     this.canvas.style.height = "100%";
     this.canvas.style.pointerEvents = "none";
     this.canvas.style.zIndex = "0";
+    this.canvas.dataset.harborThree = "1";
     this.host.style.position = "relative";
     // Insert behind Phaser canvas.
     this.host.insertBefore(this.canvas, this.host.firstChild);
@@ -123,9 +124,8 @@ export class WorldRenderer3D {
     this.worldH = world.height * world.tileSize;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0c1828);
-    // Light fog only — heavy FogExp2 crushed the city to black under ortho.
-    scene.fog = new THREE.Fog(0x0c1828, 900, 2800);
+    // Readable night harbor — not crushed black (ortho tops need value, not just side light).
+    scene.background = new THREE.Color(0x152838);
     this.scene = scene;
 
     const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 5000);
@@ -134,13 +134,13 @@ export class WorldRenderer3D {
     cam.lookAt(0, 0, 0);
     this.camera = cam;
 
-    const ambient = new THREE.AmbientLight(0xa8c0d8, 0.72);
-    const sun = new THREE.DirectionalLight(0xffe8c0, 1.45);
-    sun.position.set(-240, 560, -200);
-    const fill = new THREE.DirectionalLight(0x6a98b8, 0.5);
-    fill.position.set(200, 260, 140);
-    const sodium = new THREE.HemisphereLight(0xe8c878, 0x1a3048, 0.55);
-    scene.add(ambient, sun, fill, sodium);
+    // Strong ambient so roof tops stay readable under locked bird’s-eye.
+    const ambient = new THREE.AmbientLight(0xffffff, 1.35);
+    const sun = new THREE.DirectionalLight(0xfff0d8, 0.85);
+    sun.position.set(-180, 600, -140);
+    const fill = new THREE.DirectionalLight(0x90b8d8, 0.55);
+    fill.position.set(160, 300, 120);
+    scene.add(ambient, sun, fill);
 
     this.root = new THREE.Group();
     this.entityRoot = new THREE.Group();
@@ -184,9 +184,27 @@ export class WorldRenderer3D {
   }
 
   setViewSize(w: number, h: number): void {
-    if (!this.active || !this.renderer || !this.camera) return;
+    if (!this.active || !this.renderer || !this.camera || !this.canvas) return;
     this.viewW = w;
     this.viewH = h;
+    // Match Phaser's displayed canvas box so the city lines up with HUD world-space.
+    const phaserCanvas = this.host.querySelector("canvas:not([data-harbor-three])") as
+      | HTMLCanvasElement
+      | null;
+    if (phaserCanvas) {
+      const r = phaserCanvas.getBoundingClientRect();
+      const hostR = this.host.getBoundingClientRect();
+      this.canvas.style.position = "absolute";
+      // Clear shorthand first — setting `inset` after left/top wipes them.
+      this.canvas.style.inset = "";
+      this.canvas.style.right = "auto";
+      this.canvas.style.bottom = "auto";
+      this.canvas.style.left = `${Math.round(r.left - hostR.left)}px`;
+      this.canvas.style.top = `${Math.round(r.top - hostR.top)}px`;
+      this.canvas.style.width = `${Math.round(r.width)}px`;
+      this.canvas.style.height = `${Math.round(r.height)}px`;
+    }
+    this.canvas.dataset.harborThree = "1";
     this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     this.renderer.setSize(w, h, false);
     const halfW = w / 2;
@@ -276,7 +294,7 @@ export class WorldRenderer3D {
     if (!this.root) return;
     const ts = world.tileSize;
 
-    const groundMat = new THREE.MeshStandardMaterial({ color: 0x121c28, roughness: 0.98 });
+    const groundMat = new THREE.MeshBasicMaterial({ color: 0x1a3048 });
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(this.worldW, this.worldH),
       groundMat,
@@ -372,9 +390,9 @@ export class WorldRenderer3D {
               : cls === RoadClass.Arterial
                 ? roadsArterial
                 : roadsLocal;
-          let color = 0x4a4a56;
-          if (cls === RoadClass.Arterial) color = 0x404048;
-          if (cls === RoadClass.Freeway) color = 0x34343c;
+          let color = 0x5a5a68;
+          if (cls === RoadClass.Arterial) color = 0x505060;
+          if (cls === RoadClass.Freeway) color = 0x444450;
           batch.positions.push(new THREE.Vector3(x, 0.2, z));
           batch.colors.push(color);
           batch.scales!.push(new THREE.Vector3(1, 1, 1));
@@ -417,7 +435,7 @@ export class WorldRenderer3D {
         }
 
         if (tile === Tile.Water) {
-          const tint = hash % 2 === 0 ? 0x1a4a6a : 0x245878;
+          const tint = hash % 2 === 0 ? 0x2a6a90 : 0x3a80a8;
           waters.positions.push(new THREE.Vector3(x, 0.02, z));
           waters.colors.push(tint);
           waters.scales!.push(new THREE.Vector3(1, 0.5, 1));
@@ -495,14 +513,20 @@ export class WorldRenderer3D {
     emissiveIntensity = 1.2,
   ): void {
     if (!this.root || batch.positions.length === 0) return;
-    const mat = new THREE.MeshStandardMaterial({
-      roughness,
-      metalness,
-      vertexColors: true,
-      ...(emissive
-        ? { emissive: new THREE.Color(0xffe0a0), emissiveIntensity }
-        : {}),
-    });
+    // MeshBasic for city tiles: locked ortho top-down must stay readable.
+    // Instance colors via InstancedMesh.setColorAt (do NOT set vertexColors —
+    // that flag expects a geometry color attribute and can blank instances).
+    const mat = emissive
+      ? new THREE.MeshStandardMaterial({
+          roughness,
+          metalness,
+          color: 0xffffff,
+          emissive: new THREE.Color(0xffe0a0),
+          emissiveIntensity,
+        })
+      : new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+        });
     const mesh = new THREE.InstancedMesh(geo, mat, batch.positions.length);
     const dummy = new THREE.Object3D();
     const color = new THREE.Color();
@@ -519,6 +543,9 @@ export class WorldRenderer3D {
     }
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    // InstancedMesh bounds stay at origin — without this, the whole city
+    // disappears once the camera leaves the map corner.
+    mesh.frustumCulled = false;
     this.root.add(mesh);
   }
 

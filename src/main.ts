@@ -22,12 +22,13 @@ if (!parent) {
 
 const game = new Phaser.Game({
   // Canvas is more reliable than WebGL in headless e2e.
-  // Transparent so the Three.js city layer (z-index under Phaser) can show through.
+  // Must be fully clear (not #0b1220) or Phaser paints an opaque night wash
+  // every frame and hides the Three.js city underneath.
   type: Phaser.CANVAS,
   parent,
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
-  backgroundColor: "#0b1220",
+  backgroundColor: "#00000000",
   transparent: true,
   clearBeforeRender: true,
   pixelArt: true,

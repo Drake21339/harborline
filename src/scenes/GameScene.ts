@@ -103,7 +103,8 @@ export class GameScene extends Phaser.Scene {
     audioBus.setVolumes(this.save.masterVolume, this.save.sfxVolume, this.save.ambienceVolume);
     const worldPixels = this.world.width * this.world.tileSize;
 
-    this.cameras.main.setBackgroundColor(COLORS.sky);
+    // Transparent clear so Three.js underlay is visible (do NOT paint COLORS.sky here).
+    this.cameras.main.setBackgroundColor("rgba(0,0,0,0)");
     this.physics.world.setBounds(0, 0, worldPixels, worldPixels);
     this.cameras.main.setBounds(0, 0, worldPixels, worldPixels);
 
@@ -1153,6 +1154,7 @@ export class GameScene extends Phaser.Scene {
         fleeing: this.civilians.counts.fleeing,
       },
       fps: Math.round(this.game.loop.actualFps),
+      use3d: this.use3d,
       civBias: {
         pedPreferred: this.civilians.bias.pedPreferred,
         pedTotal: this.civilians.bias.pedTotal,

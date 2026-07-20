@@ -8,6 +8,8 @@ export interface GameDebugSnapshot {
   mission: { id: string | null; objective: string | null };
   counts: { pedestrians: number; traffic: number; police: number; fleeing?: number };
   fps: number;
+  /** True when Three.js world layer is active (WebGL city under Phaser HUD). */
+  use3d?: boolean;
   civBias?: {
     pedPreferred: number;
     pedTotal: number;
