@@ -156,3 +156,23 @@ npm run test:e2e → 1 passed ~1.1s
 ### Next slice (Build Order #8)
 
 Five distinct missions + mission manager.
+
+---
+
+## 2026-07-20 — Slice 8 Missions (green)
+
+- Five missions (courier, steal-deliver, escape-heat, multi-stop, destruction) via MissionManager.
+- Intro "Pier Packet" accept near spawn (E); markers/objectives; rewards; retry; crate soft-lock safe.
+- Unit transition tests + e2e intro mission objective.
+
+### Verification (observed)
+
+```text
+npm run check → OK
+npm run test → 24 passed (incl. 4 missions)
+npm run test:e2e → 1 passed (mission + vehicle) ~1.4s
+```
+
+### Next slice (Build Order #9)
+
+HUD/minimap, Web Audio, localStorage persistence.

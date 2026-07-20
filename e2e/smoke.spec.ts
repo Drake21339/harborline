@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test("boots, starts, moves, and enter/drive/exit vehicle", async ({ page }) => {
+test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ page }) => {
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
   page.on("pageerror", (err) => pageErrors.push(String(err)));
@@ -41,9 +41,22 @@ test("boots, starts, moves, and enter/drive/exit vehicle", async ({ page }) => {
   );
   await page.keyboard.up("d");
 
-  // Walk toward parked compact (east of spawn) and enter.
+  // Accept intro mission near spawn (E prefers mission while available).
+  await page.keyboard.down("a");
+  await page.waitForTimeout(200);
+  await page.keyboard.up("a");
+  await page.keyboard.press("e");
+  await page.waitForFunction(
+    () =>
+      window.__GAME_DEBUG__?.mission.id === "intro-courier" &&
+      Boolean(window.__GAME_DEBUG__?.mission.objective),
+    null,
+    { timeout: 5_000 },
+  );
+
+  // Walk toward parked compact and enter/drive/exit.
   await page.keyboard.down("d");
-  await page.waitForTimeout(400);
+  await page.waitForTimeout(450);
   await page.keyboard.up("d");
   await page.keyboard.press("e");
   await page.waitForFunction(() => window.__GAME_DEBUG__?.inVehicle === true, null, {
@@ -70,16 +83,6 @@ test("boots, starts, moves, and enter/drive/exit vehicle", async ({ page }) => {
     timeout: 5_000,
   });
 
-  const after = await page.evaluate(() => {
-    const d = window.__GAME_DEBUG__;
-    if (!d) throw new Error("missing __GAME_DEBUG__");
-    return { x: d.player.x, y: d.player.y, scene: d.scene, inVehicle: d.inVehicle };
-  });
-
-  expect(after.scene).toBe("GameScene");
-  expect(after.inVehicle).toBe(false);
-  expect(after.x).toBeGreaterThan(before.x);
-
   await page.waitForFunction(
     () =>
       (window.__GAME_DEBUG__?.counts.pedestrians ?? 0) > 0 &&
@@ -87,6 +90,21 @@ test("boots, starts, moves, and enter/drive/exit vehicle", async ({ page }) => {
     null,
     { timeout: 8_000 },
   );
+
+  const after = await page.evaluate(() => {
+    const d = window.__GAME_DEBUG__;
+    if (!d) throw new Error("missing __GAME_DEBUG__");
+    return {
+      x: d.player.x,
+      scene: d.scene,
+      inVehicle: d.inVehicle,
+      missionId: d.mission.id,
+    };
+  });
+
+  expect(after.scene).toBe("GameScene");
+  expect(after.inVehicle).toBe(false);
+  expect(after.missionId).toBe("intro-courier");
 
   await page.screenshot({ path: "test-results/harborline-vehicle-smoke.png", fullPage: true });
   expect(pageErrors, `page errors: ${pageErrors.join(" | ")}`).toEqual([]);

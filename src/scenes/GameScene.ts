@@ -12,6 +12,7 @@ import {
   facingFromPoints,
 } from "../systems/playerCombat";
 import type { CombatantState } from "../systems/combatTypes";
+import { MissionRuntime } from "../missions/MissionRuntime";
 import { CivilianRuntime } from "../systems/CivilianRuntime";
 import {
   applyArrestPenalties,
@@ -43,6 +44,7 @@ export class GameScene extends Phaser.Scene {
   private civilians!: CivilianRuntime;
   private pickups!: PickupRuntime;
   private police!: PoliceRuntime;
+  private missions!: MissionRuntime;
   private heat!: HeatState;
   private wallet!: WalletState;
   private safehouse = { x: 0, y: 0 };
@@ -93,6 +95,7 @@ export class GameScene extends Phaser.Scene {
     this.heat = createHeatState();
     this.wallet = createWallet();
     this.pickups = new PickupRuntime(this, spawnX, spawnY);
+    this.missions = new MissionRuntime(this, spawnX, spawnY);
     // Safehouse: Midstack plaza west pad.
     this.safehouse = { x: spawnX - 90, y: spawnY - 10 };
     this.add
@@ -146,7 +149,14 @@ export class GameScene extends Phaser.Scene {
         this.tryAttack();
       }
       if (key === "e") {
-        this.toggleVehicle();
+        if (
+          !this.vehicles.activeId &&
+          this.missions.tryAcceptIntro(this.player.x, this.player.y, this.time.now)
+        ) {
+          // Mission accept consumes E when near intro marker.
+        } else {
+          this.toggleVehicle();
+        }
       }
       if (key === "r") {
         this.respawnStub();
@@ -360,6 +370,20 @@ export class GameScene extends Phaser.Scene {
         else this.vehicles.repairNearest(this.player.x, this.player.y, amount);
       },
     );
+    this.missions.update(
+      this.player.x,
+      this.player.y,
+      now,
+      {
+        inVehicle: Boolean(this.vehicles.activeId),
+        vehicleId: this.vehicles.active?.state.id ?? null,
+        heat: this.heat.level,
+      },
+      (cash) => {
+        this.wallet.cash += cash;
+        this.wallet.score += cash;
+      },
+    );
 
     const tileX = Math.floor(this.player.x / this.world.tileSize);
     const tileY = Math.floor(this.player.y / this.world.tileSize);
@@ -516,9 +540,15 @@ export class GameScene extends Phaser.Scene {
 
   private updateProjectiles(): void {
     const bounds = this.dummy.body.getBounds();
+    const crateBounds = this.missions.crate.getBounds();
     for (const obj of this.projectiles.getChildren()) {
       const bolt = obj as Phaser.GameObjects.Rectangle;
       if (!bolt.active) continue;
+      if (Phaser.Geom.Intersects.RectangleToRectangle(bolt.getBounds(), crateBounds)) {
+        this.missions.damageCrate(COMBAT.rangedDamage);
+        bolt.destroy();
+        continue;
+      }
       if (Phaser.Geom.Intersects.RectangleToRectangle(bolt.getBounds(), bounds)) {
         if (this.dummy.health > 0) {
           this.dummy.health = Math.max(0, this.dummy.health - COMBAT.rangedDamage);
@@ -566,7 +596,10 @@ export class GameScene extends Phaser.Scene {
         ? { speed: veh.state.speed, health: veh.state.health }
         : null,
       heat: this.heat.level,
-      mission: { id: null, objective: null },
+      mission: {
+        id: this.missions.manager.active?.def.id ?? null,
+        objective: this.missions.manager.active?.objective ?? null,
+      },
       counts: {
         pedestrians: this.civilians.counts.pedestrians,
         traffic: this.civilians.counts.traffic,
