@@ -1,0 +1,15 @@
+{
+  "autoRun": {
+    "allow_instructions": [
+      "Allow npm, npx, node, and vite commands used to install dependencies, run the Harborline app, typecheck, lint, unit tests, production build, and Playwright e2e inside this repo.",
+      "Allow playwright browser install and test runs that write under test-results/ and playwright-report/ in this repo.",
+      "Allow ordinary git status, diff, log, and add inside this repo; still require approval for commit, push, merge, rebase, reset --hard, and force-push.",
+      "Allow reading and writing project files under the Harborline workspace, including src/, e2e/, docs/, scripts/, and AUTONOMOUS_BUILD_LOG.md."
+    ],
+    "block_instructions": [
+      "Every git commit, push, merge, rebase, or reset should go through approval first.",
+      "Every command that deletes the repo, parent directories, or vault paths outside this workspace should go through approval first.",
+      "Every command that modifies files under ~/.claude, Cursor application support databases, or SSH/credentials paths should go through approval first."
+    ]
+  }
+}

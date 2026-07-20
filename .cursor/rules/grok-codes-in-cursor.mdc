@@ -1,0 +1,12 @@
+---
+description: In Cursor, Grok implements all coding unless Daniel specifies otherwise
+alwaysApply: true
+---
+
+# Coding posture (Cursor)
+
+Inside Cursor, **Grok** (e.g. Grok 4.5 high/fast) implements all coding — file writes, edits, scripts, config — unless Daniel explicitly says otherwise for that task.
+
+- Do **not** default to Codex/`codex exec` for coding in Cursor.
+- Planning, audits, and docs may still use other models when asked.
+- Claude Code’s separate `codex-codes-gate` does not override this Cursor posture.
