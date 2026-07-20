@@ -9,17 +9,17 @@ export interface MissionWorldHooks {
   heat: number;
   now: number;
   destroyTargetAlive: boolean;
+  /** False when steal target id is not present in the world fleet. */
+  targetVehiclePresent: boolean;
 }
+
+const ACCEPT_RADIUS = 90;
 
 export class MissionManager {
   readonly missions: MissionRuntimeState[];
   activeId: string | null = null;
-  private readonly spawnX: number;
-  private readonly spawnY: number;
 
   constructor(spawnX: number, spawnY: number) {
-    this.spawnX = spawnX;
-    this.spawnY = spawnY;
     const defs = buildMissionDefs(spawnX, spawnY);
     this.missions = defs.map((def, i) => ({
       def,
@@ -40,17 +40,31 @@ export class MissionManager {
     return this.missions[0]!;
   }
 
-  /** Near spawn marker for intro accept. */
-  canAcceptIntro(playerX: number, playerY: number): boolean {
-    const intro = this.intro;
-    if (
-      intro.status !== "available" &&
-      intro.status !== "briefing" &&
-      intro.status !== "failed"
-    ) {
-      return false;
+  /** Available / failed / briefing missions the player can accept near. */
+  listAcceptable(): MissionRuntimeState[] {
+    return this.missions.filter(
+      (m) => m.status === "available" || m.status === "briefing" || m.status === "failed",
+    );
+  }
+
+  /** Nearest acceptable mission within accept radius, or null. */
+  nearestAcceptable(playerX: number, playerY: number): MissionRuntimeState | null {
+    let best: MissionRuntimeState | null = null;
+    let bestDist = ACCEPT_RADIUS;
+    for (const m of this.listAcceptable()) {
+      const d = Math.hypot(playerX - m.def.acceptX, playerY - m.def.acceptY);
+      if (d < bestDist) {
+        best = m;
+        bestDist = d;
+      }
     }
-    return Math.hypot(playerX - this.spawnX, playerY - this.spawnY) < 90;
+    return best;
+  }
+
+  /** @deprecated Prefer nearestAcceptable — kept for intro spawn checks. */
+  canAcceptIntro(playerX: number, playerY: number): boolean {
+    const near = this.nearestAcceptable(playerX, playerY);
+    return near?.def.id === "intro-courier";
   }
 
   offerBriefing(id: string): void {
@@ -77,6 +91,24 @@ export class MissionManager {
     m.objective = this.objectiveFor(m);
     this.activeId = id;
     return true;
+  }
+
+  /** Accept nearest available/failed mission if player is in range. */
+  tryAcceptNearby(playerX: number, playerY: number, now: number): boolean {
+    const near = this.nearestAcceptable(playerX, playerY);
+    if (!near) return false;
+    if (near.status === "failed") {
+      this.retry(near.def.id);
+    }
+    this.offerBriefing(near.def.id);
+    return this.accept(near.def.id, now);
+  }
+
+  /** E2E/debug helper: pay reward + unlock next without walking objectives. */
+  forceSucceedActive(): number {
+    const m = this.active;
+    if (!m || m.status !== "active") return 0;
+    return this.succeed(m).reward;
   }
 
   retry(id: string): void {
@@ -141,6 +173,9 @@ export class MissionManager {
 
   private tickSteal(m: MissionRuntimeState, hooks: MissionWorldHooks) {
     const need = m.def.targetVehicleId;
+    if (need && !hooks.targetVehiclePresent) {
+      return this.fail(m, "Target vehicle missing");
+    }
     if (!hooks.inVehicle || hooks.vehicleId !== need) {
       m.objective = `Steal ${need ?? "target vehicle"}`;
       return null;
@@ -155,11 +190,11 @@ export class MissionManager {
   }
 
   private tickEscape(m: MissionRuntimeState, hooks: MissionWorldHooks) {
+    // Instant-win guard: heat must have been raised (markerIndex flag) then cleared.
+    if (hooks.heat > 0) m.markerIndex = 1;
     if (hooks.heat <= 0 && hooks.now - m.startedAt > 1500) {
-      // Must have raised heat at least once during mission — tracked via markerIndex flag.
       if (m.markerIndex >= 1) return this.succeed(m);
     }
-    if (hooks.heat > 0) m.markerIndex = 1;
     m.objective = hooks.heat > 0 ? "Escape until heat clears" : "Raise heat, then escape";
     return null;
   }
@@ -169,20 +204,23 @@ export class MissionManager {
   }
 
   private tickDestroy(m: MissionRuntimeState, hooks: MissionWorldHooks) {
-    m.objective = "Destroy the marked crate";
     if (!hooks.destroyTargetAlive) {
-      return this.succeed(m);
+      const msg =
+        hooks.now - m.startedAt < 250
+          ? "Target already destroyed — auto-complete"
+          : "Crate destroyed";
+      return this.succeed(m, msg);
     }
-    // Soft-lock guard: if target already gone at start, succeed.
+    m.objective = "Destroy the marked crate";
     return null;
   }
 
-  private succeed(m: MissionRuntimeState) {
-    m.status = "success";
-    m.objective = "Complete — reward paid";
-    this.activeId = null;
+  private succeed(m: MissionRuntimeState, objective = "Complete — reward paid") {
     const reward = m.def.rewardCash;
+    this.activeId = null;
     this.cleanup(m.def.id);
+    // Keep result text after cleanup so soft-lock auto-complete is visible.
+    m.objective = objective;
     return { reward, status: "success" as const };
   }
 

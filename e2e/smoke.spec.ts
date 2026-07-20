@@ -52,10 +52,47 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
     { timeout: 5_000 },
   );
 
-  // Walk toward parked compact and enter/drive/exit.
-  await page.keyboard.down("d");
-  await page.waitForTimeout(450);
-  await page.keyboard.up("d");
+  // Scripted unlock chain: complete intro, accept ≥2 non-intro missions in-world.
+  await page.evaluate(() => {
+    const t = window.__HARBOR_TEST__;
+    if (!t) throw new Error("missing __HARBOR_TEST__");
+    t.completeActiveMission();
+    const cab = t.acceptPoint("cab-boost");
+    if (!cab) throw new Error("cab accept missing");
+    t.movePlayer(cab.x, cab.y);
+  });
+  await page.keyboard.press("e");
+  await page.waitForFunction(
+    () =>
+      window.__GAME_DEBUG__?.mission.id === "cab-boost" &&
+      Boolean(window.__GAME_DEBUG__?.mission.objective),
+    null,
+    { timeout: 5_000 },
+  );
+
+  await page.evaluate(() => {
+    const t = window.__HARBOR_TEST__;
+    if (!t) throw new Error("missing __HARBOR_TEST__");
+    t.completeActiveMission();
+    const cool = t.acceptPoint("cool-off");
+    if (!cool) throw new Error("cool-off accept missing");
+    t.movePlayer(cool.x, cool.y);
+  });
+  await page.keyboard.press("e");
+  await page.waitForFunction(
+    () =>
+      window.__GAME_DEBUG__?.mission.id === "cool-off" &&
+      Boolean(window.__GAME_DEBUG__?.mission.objective),
+    null,
+    { timeout: 5_000 },
+  );
+
+  // Return near spawn fleet for enter/drive/exit.
+  await page.evaluate(() => {
+    const t = window.__HARBOR_TEST__;
+    if (!t) throw new Error("missing test hooks");
+    t.moveNearFleet();
+  });
   await page.keyboard.press("e");
   await page.waitForFunction(() => window.__GAME_DEBUG__?.inVehicle === true, null, {
     timeout: 5_000,
@@ -97,12 +134,14 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
       scene: d.scene,
       inVehicle: d.inVehicle,
       missionId: d.mission.id,
+      objective: d.mission.objective,
     };
   });
 
   expect(after.scene).toBe("GameScene");
   expect(after.inVehicle).toBe(false);
-  expect(after.missionId).toBe("intro-courier");
+  expect(after.missionId).toBe("cool-off");
+  expect(after.objective).toBeTruthy();
 
   // Pause / resume + audio unlock via gesture already done on canvas click/Enter.
   await page.keyboard.press("p");

@@ -113,6 +113,7 @@ export class GameScene extends Phaser.Scene {
     this.wallet.score = this.save.score;
     this.pickups = new PickupRuntime(this, spawnX, spawnY);
     this.missions = new MissionRuntime(this, spawnX, spawnY);
+    this.wireTestHooks();
     this.minimap = new Minimap(this, this.world);
     // Safehouse: Midstack plaza west pad.
     this.safehouse = { x: spawnX - 90, y: spawnY - 10 };
@@ -206,7 +207,7 @@ export class GameScene extends Phaser.Scene {
       if (key === "e") {
         if (
           !this.vehicles.activeId &&
-          this.missions.tryAcceptIntro(this.player.x, this.player.y, this.time.now)
+          this.missions.tryAcceptNearby(this.player.x, this.player.y, this.time.now)
         ) {
           audioBus.playSfx("ui");
         } else {
@@ -458,6 +459,7 @@ export class GameScene extends Phaser.Scene {
         else this.vehicles.repairNearest(this.player.x, this.player.y, amount);
       },
     );
+    const stealTargetId = this.missions.manager.active?.def.targetVehicleId ?? null;
     this.missions.update(
       this.player.x,
       this.player.y,
@@ -466,6 +468,9 @@ export class GameScene extends Phaser.Scene {
         inVehicle: Boolean(this.vehicles.activeId),
         vehicleId: this.vehicles.active?.state.id ?? null,
         heat: this.heat.level,
+        targetVehiclePresent: stealTargetId
+          ? this.vehicles.vehicles.some((v) => v.state.id === stealTargetId && !v.state.destroyed)
+          : true,
       },
       (cash) => {
         this.wallet.cash += cash;
@@ -560,7 +565,7 @@ export class GameScene extends Phaser.Scene {
       "",
       "WASD / Arrows — move or drive",
       "Shift — sprint   Space — handbrake",
-      "E — enter/exit / accept mission",
+      "E — enter/exit / accept available missions near markers",
       "Aim: mouse if moved, else face walk direction",
       "Fire: hold F or J (keyboard) or LMB (mouse)",
       "M — expand map   R — safehouse respawn",
@@ -802,5 +807,48 @@ export class GameScene extends Phaser.Scene {
       },
       fps: Math.round(this.game.loop.actualFps),
     });
+  }
+
+  /** Playwright-only helpers for mission depth proofs (not a public game API). */
+  private wireTestHooks(): void {
+    window.__HARBOR_TEST__ = {
+      movePlayer: (x: number, y: number) => {
+        this.player.setPosition(x, y);
+        const body = this.player.body as Phaser.Physics.Arcade.Body;
+        body.reset(x, y);
+      },
+      completeActiveMission: () => {
+        const reward = this.missions.manager.forceSucceedActive();
+        if (reward > 0) {
+          this.wallet.cash += reward;
+          this.wallet.score += reward;
+        }
+        this.publishDebug();
+        return reward;
+      },
+      acceptNearby: () => {
+        const ok = this.missions.tryAcceptNearby(
+          this.player.x,
+          this.player.y,
+          this.time.now,
+        );
+        this.publishDebug();
+        return ok;
+      },
+      acceptPoint: (missionId: string) => {
+        const m = this.missions.manager.missions.find((x) => x.def.id === missionId);
+        if (!m) return null;
+        return { x: m.def.acceptX, y: m.def.acceptY };
+      },
+      moveNearFleet: () => {
+        const v = this.vehicles.vehicles[0];
+        if (!v) return;
+        const x = v.state.x - 24;
+        const y = v.state.y;
+        this.player.setPosition(x, y);
+        const body = this.player.body as Phaser.Physics.Arcade.Body;
+        body.reset(x, y);
+      },
+    };
   }
 }

@@ -38,7 +38,7 @@ Fully playable **with or without a mouse** (keyboard-first).
 - **Enter** — start from title (click optional; unlocks audio)
 - **WASD** / arrows — move on foot; throttle/steer in vehicles
 - **Shift** — sprint
-- **E** — enter/exit vehicle; accept/retry intro mission near spawn
+- **E** — enter/exit vehicle; accept/retry available missions near their plaza markers
 - **Aim** — mouse if recently moved; otherwise face walk direction
 - **Fire** — hold **F** or **J** (keyboard) or **LMB** (mouse); melee when ammo empty
 - **Space** — handbrake

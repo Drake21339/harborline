@@ -10,9 +10,18 @@ export interface GameDebugSnapshot {
   fps: number;
 }
 
+export interface HarborTestHooks {
+  movePlayer: (x: number, y: number) => void;
+  completeActiveMission: () => number;
+  acceptNearby: () => boolean;
+  acceptPoint: (missionId: string) => { x: number; y: number } | null;
+  moveNearFleet: () => void;
+}
+
 declare global {
   interface Window {
     __GAME_DEBUG__?: Readonly<GameDebugSnapshot>;
+    __HARBOR_TEST__?: HarborTestHooks;
   }
 }
 

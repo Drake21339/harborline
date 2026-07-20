@@ -221,12 +221,33 @@ npm run verify
 
 Met for playable Harborline sandbox on pinned defaults (title/seed/tile/city). Non-blocking polish remains (extra VFX, more mission scripting depth, further FPS tuning).
 
-### Polish AFK (ready, not started)
+### Polish AFK (in progress)
 
 - One-paste: `docs/WALKAWAY-AFK-POLISH-PROMPT.md`
 - Slices P1–P5: `docs/GROK-POLISH-SLICE-PROMPTS.md`
-- Start at **P1** (mission depth) when Daniel runs the polish AFK.
 - **No art-director loop** in this pass (ADR-007). Deep artwork / top-down 3D AFK comes *after* systems polish DoD.
+
+---
+
+## 2026-07-20 — Polish P1 Mission depth (green)
+
+- All five missions have plaza accept points + world markers + on-screen `E: Accept` prompt (not only intro).
+- Unit happy paths: courier, steal-deliver, multi-stop, destruction; escape-heat requires raise-then-clear (no instant win).
+- Soft-lock guards: missing steal target fails with message; destroyed crate auto-completes with message.
+- `__GAME_DEBUG__.mission.id/objective` updates during active missions; e2e accepts intro + cab-boost + cool-off via in-world accept points.
+- `window.__HARBOR_TEST__` helpers for scripted mission unlock proofs only.
+
+### Verification (observed)
+
+```text
+npm run check → typecheck OK, lint OK
+npm run test → 33 passed (10 mission tests)
+npm run test:e2e → 1 passed ~1.4s (intro + 2 non-intro accepts + vehicle + pause + refresh)
+```
+
+### Next slice (Polish P2)
+
+Living city feel: AI tile bias + district visual read.
 
 ### Art direction pin (2026-07-20)
 

@@ -20,7 +20,10 @@ export interface MissionDef {
   title: string;
   briefing: string;
   rewardCash: number;
-  /** Marker offsets from spawn in pixels. */
+  /** World accept point (plaza board) — player presses E nearby. */
+  acceptX: number;
+  acceptY: number;
+  /** Objective markers in world pixels. */
   markers: Array<{ x: number; y: number; label: string }>;
   timeLimitMs?: number;
   targetVehicleId?: string;

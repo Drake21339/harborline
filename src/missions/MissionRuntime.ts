@@ -6,7 +6,7 @@ export class MissionRuntime {
   readonly manager: MissionManager;
   private readonly markerViews: Phaser.GameObjects.Arc[] = [];
   private readonly markerLabels: Phaser.GameObjects.Text[] = [];
-  private introPrompt!: Phaser.GameObjects.Text;
+  private acceptPrompt!: Phaser.GameObjects.Text;
   private objectiveHud!: Phaser.GameObjects.Text;
   crate!: Phaser.GameObjects.Rectangle;
   crateAlive = true;
@@ -14,7 +14,7 @@ export class MissionRuntime {
   constructor(scene: Phaser.Scene, spawnX: number, spawnY: number) {
     this.manager = new MissionManager(spawnX, spawnY);
 
-    for (let i = 0; i < 4; i += 1) {
+    for (let i = 0; i < 8; i += 1) {
       this.markerViews.push(
         scene.add.circle(0, 0, 18, 0x7dffa8, 0.35).setDepth(4).setVisible(false),
       );
@@ -36,7 +36,7 @@ export class MissionRuntime {
       .setDepth(8);
     scene.physics.add.existing(this.crate, true);
 
-    this.introPrompt = scene.add
+    this.acceptPrompt = scene.add
       .text(12, 96, "", {
         fontFamily: "monospace",
         fontSize: "13px",
@@ -74,13 +74,13 @@ export class MissionRuntime {
     }
   }
 
+  tryAcceptNearby(playerX: number, playerY: number, now: number): boolean {
+    return this.manager.tryAcceptNearby(playerX, playerY, now);
+  }
+
+  /** @deprecated use tryAcceptNearby */
   tryAcceptIntro(playerX: number, playerY: number, now: number): boolean {
-    if (!this.manager.canAcceptIntro(playerX, playerY)) return false;
-    if (this.manager.intro.status === "failed") {
-      this.manager.retry("intro-courier");
-    }
-    this.manager.offerBriefing("intro-courier");
-    return this.manager.accept("intro-courier", now);
+    return this.tryAcceptNearby(playerX, playerY, now);
   }
 
   update(
@@ -91,6 +91,7 @@ export class MissionRuntime {
       inVehicle: boolean;
       vehicleId: string | null;
       heat: number;
+      targetVehiclePresent: boolean;
     },
     onReward: (cash: number) => void,
   ): void {
@@ -102,55 +103,61 @@ export class MissionRuntime {
       heat: hooks.heat,
       now,
       destroyTargetAlive: this.crateAlive,
+      targetVehiclePresent: hooks.targetVehiclePresent,
     });
     if (result?.status === "success" && result.reward > 0) {
       onReward(result.reward);
     }
-    if (result?.status === "failed") {
-      // stay failed until retry via E near spawn
-    }
 
     const active = this.manager.active;
-    // Markers
     for (let i = 0; i < this.markerViews.length; i += 1) {
       this.markerViews[i]!.setVisible(false);
       this.markerLabels[i]!.setVisible(false);
     }
+
+    let slot = 0;
     if (active && active.status === "active") {
       const marker = active.def.markers[active.markerIndex];
-      if (marker) {
-        this.markerViews[0]!.setPosition(marker.x, marker.y).setVisible(true);
-        this.markerLabels[0]!.setPosition(marker.x, marker.y - 22)
+      if (marker && slot < this.markerViews.length) {
+        this.markerViews[slot]!.setPosition(marker.x, marker.y).setVisible(true);
+        this.markerLabels[slot]!
+          .setPosition(marker.x, marker.y - 22)
           .setText(marker.label)
           .setVisible(true);
+        slot += 1;
       }
-      if (active.def.type === "destruction" && this.crateAlive) {
-        this.markerViews[1]!.setPosition(this.crate.x, this.crate.y).setVisible(true);
+      if (active.def.type === "destruction" && this.crateAlive && slot < this.markerViews.length) {
+        this.markerViews[slot]!.setPosition(this.crate.x, this.crate.y).setVisible(true);
+        slot += 1;
       }
-    } else if (this.manager.intro.status === "available" || this.manager.intro.status === "failed") {
-      this.markerViews[0]!.setPosition(this.manager.intro.def.markers[0]!.x, this.manager.intro.def.markers[0]!.y)
-        .setVisible(true);
-      this.markerLabels[0]!
-        .setPosition(
-          this.manager.intro.def.markers[0]!.x,
-          this.manager.intro.def.markers[0]!.y - 22,
-        )
-        .setText("INTRO")
-        .setVisible(true);
+    } else {
+      // World markers for every available / failed mission accept point.
+      for (const m of this.manager.listAcceptable()) {
+        if (slot >= this.markerViews.length) break;
+        this.markerViews[slot]!.setPosition(m.def.acceptX, m.def.acceptY).setVisible(true);
+        this.markerLabels[slot]!
+          .setPosition(m.def.acceptX, m.def.acceptY - 22)
+          .setText(m.status === "failed" ? `RETRY` : m.def.title)
+          .setVisible(true);
+        slot += 1;
+      }
     }
 
-    if (this.manager.canAcceptIntro(playerX, playerY) && !active) {
-      const intro = this.manager.intro;
-      this.introPrompt.setText(
-        intro.status === "failed"
-          ? `E: Retry ${intro.def.title}`
-          : `E: Accept mission — ${intro.def.title}`,
+    const near = !active ? this.manager.nearestAcceptable(playerX, playerY) : null;
+    if (near) {
+      this.acceptPrompt.setText(
+        near.status === "failed"
+          ? `E: Retry ${near.def.title}`
+          : `E: Accept mission — ${near.def.title}`,
       );
     } else {
-      this.introPrompt.setText("");
+      this.acceptPrompt.setText("");
     }
 
-    const obj = active?.objective ?? this.manager.intro.objective;
+    const obj =
+      active?.objective ??
+      this.manager.missions.find((m) => m.objective && m.status !== "locked")?.objective ??
+      null;
     this.objectiveHud.setText(obj ? `OBJ: ${obj}` : "");
   }
 }
