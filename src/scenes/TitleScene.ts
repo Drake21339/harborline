@@ -38,7 +38,7 @@ export class TitleScene extends Phaser.Scene {
       .text(
         width / 2,
         height * 0.72,
-        "WASD / Arrows move · Shift sprint · F1 help (soon)",
+        "WASD move · E missions/vehicles · P pause · F1 help",
         {
           fontFamily: "monospace",
           fontSize: "16px",

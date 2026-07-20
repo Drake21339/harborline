@@ -196,3 +196,27 @@ npm run test:e2e → 1 passed (pause/resume included) ~1.5s
 ### Next slice (Build Order #10)
 
 Harden e2e spine, README, full verify, completion report.
+
+---
+
+## 2026-07-20 — Slice 10 Hardening + Definition of Done (green)
+
+- README updated to match controls/missions/commands.
+- e2e spine: boot → start → move → intro mission → enter/drive/exit → civilians → pause/resume → refresh re-enter GameScene → screenshot.
+- No GTA IP strings in `src/`; no core TODOs.
+- `npm run verify` green end-to-end.
+
+### Verification (observed)
+
+```text
+npm run verify
+→ typecheck OK
+→ lint OK
+→ vitest: 26 passed (8 files)
+→ vite build OK (~1.73s)
+→ playwright: 1 passed ~1.9s (full smoke + refresh)
+```
+
+### Definition of Done
+
+Met for playable Harborline sandbox on pinned defaults (title/seed/tile/city). Non-blocking polish remains (extra VFX, more mission scripting depth, further FPS tuning).

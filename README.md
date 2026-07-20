@@ -4,6 +4,8 @@ Clean-room top-down urban action sandbox for the browser. Original city, charact
 
 **No Rockstar / DMA Design IP** (maps, names, logos, sprites, music, dialogue, or source) is included.
 
+Pinned defaults: title **Harborline**, seed `harborline-1997`, tile **32px**, city **128×128**.
+
 ## Requirements
 
 - Node.js 20+ (Node 26 OK)
@@ -27,27 +29,47 @@ npx playwright install chromium   # once, for e2e
 | `npm run test:e2e` | Playwright smoke |
 | `npm run verify` | check → test → build → e2e |
 
-## Controls (scaffold)
+## Controls
 
-- **Enter** / click — start from title
-- **WASD** / arrows — move
+- **Enter** / click — start from title (also unlocks audio)
+- **WASD** / arrows — move on foot; throttle/steer in vehicles
 - **Shift** — sprint
-- **Esc** — return to title
+- **E** — enter/exit vehicle; accept/retry intro mission near spawn
+- **Mouse** + **LMB** / **F** — aim and fire (melee when ammo empty)
+- **Space** — handbrake
+- **R** — safehouse respawn
+- **M** — expand/collapse minimap
+- **P** / **Esc** — pause / resume (pause: volume + reset save)
+- **F1** / **H** — help overlay
 
-Full control map lands with the gameplay build (see `docs/REVISED-AUTONOMOUS-BUILD-PROMPT.md`).
+## Systems
 
-## Current status
+- Seeded districts (Pier Ward, Midstack, Ridge Hollow, Freight Cut, Greenbelt) with collision
+- On-foot combat, pickups, safehouse
+- Six vehicles: compact, sedan, sports, van, Harbor Cab, Patrol
+- Pooled pedestrians + traffic with flee reactions
+- Heat 0–5 with police pursuit / arrest / decay
+- Five mission types: courier, steal-deliver, escape-heat, multi-stop, destruction
+- HUD, minimap, Web Audio (after gesture), localStorage save
 
-Scaffold: title screen, placeholder city grid, movable player, `__GAME_DEBUG__`, unit + e2e smoke harness. Full sandbox systems are not implemented yet.
+## Mission types (one each)
 
-## Architecture (target)
-
-Scenes (`Boot` / `Title` / `Game`) plus modular `src/systems/*`, `src/config/*`, `src/types/*`. Expand toward vehicles, civilians, heat, missions per the revised build prompt.
+1. **Pier Packet** — timed courier
+2. **Yellow Line** — steal Harbor Cab → drop
+3. **Cool Off** — raise heat, escape until clear
+4. **Harbor Hops** — multi-stop packages
+5. **Crate Crack** — destruction
 
 ## Testing
 
-- Unit: deterministic RNG / seed stability
-- E2E: boot → start → move → screenshot in `test-results/`
+- Unit: RNG, worldgen, combat, vehicles, pickups, heat, missions, save validation
+- E2E: boot → start → move → intro mission → enter/drive/exit → civilians → pause/resume → screenshot
+
+## Architecture
+
+Scenes (`Boot` / `Title` / `Game`) plus `src/world/*`, `src/vehicles/*`, `src/missions/*`, `src/systems/*`, `src/ui/*`, `src/config/*`.
+
+Runtime debug: `window.__GAME_DEBUG__` (read-only snapshot).
 
 ## License
 

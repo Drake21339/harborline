@@ -111,7 +111,20 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
   await page.waitForTimeout(100);
   await page.keyboard.press("p");
 
-  await page.screenshot({ path: "test-results/harborline-vehicle-smoke.png", fullPage: true });
+  // Refresh must re-boot cleanly without duplicated soft-lock.
+  await page.reload();
+  await page.waitForFunction(() => window.__GAME_DEBUG__?.bootCompleted === true, null, {
+    timeout: 20_000,
+  });
+  await page.locator("canvas").click({ position: { x: 10, y: 10 } });
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(() => window.__GAME_DEBUG__?.scene === "GameScene", null, {
+    timeout: 10_000,
+  });
+  const refreshed = await page.evaluate(() => window.__GAME_DEBUG__?.scene);
+  expect(refreshed).toBe("GameScene");
+
+  await page.screenshot({ path: "test-results/harborline-smoke.png", fullPage: true });
   expect(pageErrors, `page errors: ${pageErrors.join(" | ")}`).toEqual([]);
   expect(consoleErrors, `console errors: ${consoleErrors.join(" | ")}`).toEqual([]);
 });
