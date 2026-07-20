@@ -77,3 +77,23 @@ npm run test:e2e → 1 passed ~627ms
 ### Next slice (Build Order #4)
 
 Six vehicle archetypes; enter/exit; arcade drive; damage stages.
+
+---
+
+## 2026-07-20 — Slice 4 Vehicles (green)
+
+- Six archetypes (compact/sedan/sports/van/taxi/police) with shared arcade sim.
+- E enter/exit near spawn fleet; throttle/steer/handbrake; damage stages → wreck; safe exit.
+- `__GAME_DEBUG__.inVehicle` + `vehicle.speed/health`; e2e enter/drive/exit.
+
+### Verification (observed)
+
+```text
+npm run check → OK
+npm run test → 13 passed (incl. 4 vehicleSim)
+npm run test:e2e → 1 passed enter/drive/exit ~1.1s
+```
+
+### Next slice (Build Order #5)
+
+Pooled pedestrians + road traffic with caps and flee/react.

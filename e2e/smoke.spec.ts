@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test("boots, starts, and moves the player", async ({ page }) => {
+test("boots, starts, moves, and enter/drive/exit vehicle", async ({ page }) => {
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
   page.on("pageerror", (err) => pageErrors.push(String(err)));
@@ -25,7 +25,6 @@ test("boots, starts, and moves the player", async ({ page }) => {
     timeout: 10_000,
   });
 
-  // Focus the game canvas so Phaser receives keyboard events.
   await page.locator("canvas").click({ position: { x: 40, y: 40 } });
 
   const before = await page.evaluate(() => {
@@ -42,16 +41,46 @@ test("boots, starts, and moves the player", async ({ page }) => {
   );
   await page.keyboard.up("d");
 
+  // Walk toward parked compact (east of spawn) and enter.
+  await page.keyboard.down("d");
+  await page.waitForTimeout(400);
+  await page.keyboard.up("d");
+  await page.keyboard.press("e");
+  await page.waitForFunction(() => window.__GAME_DEBUG__?.inVehicle === true, null, {
+    timeout: 5_000,
+  });
+
+  const entered = await page.evaluate(() => {
+    const d = window.__GAME_DEBUG__;
+    if (!d?.vehicle) throw new Error("missing vehicle debug");
+    return { speed: d.vehicle.speed, health: d.vehicle.health };
+  });
+  expect(entered.health).toBeGreaterThan(0);
+
+  await page.keyboard.down("w");
+  await page.waitForFunction(
+    () => Math.abs(window.__GAME_DEBUG__?.vehicle?.speed ?? 0) > 20,
+    null,
+    { timeout: 5_000 },
+  );
+  await page.keyboard.up("w");
+
+  await page.keyboard.press("e");
+  await page.waitForFunction(() => window.__GAME_DEBUG__?.inVehicle === false, null, {
+    timeout: 5_000,
+  });
+
   const after = await page.evaluate(() => {
     const d = window.__GAME_DEBUG__;
     if (!d) throw new Error("missing __GAME_DEBUG__");
-    return { x: d.player.x, y: d.player.y, scene: d.scene };
+    return { x: d.player.x, y: d.player.y, scene: d.scene, inVehicle: d.inVehicle };
   });
 
   expect(after.scene).toBe("GameScene");
+  expect(after.inVehicle).toBe(false);
   expect(after.x).toBeGreaterThan(before.x);
 
-  await page.screenshot({ path: "test-results/harborline-scaffold-smoke.png", fullPage: true });
+  await page.screenshot({ path: "test-results/harborline-vehicle-smoke.png", fullPage: true });
   expect(pageErrors, `page errors: ${pageErrors.join(" | ")}`).toEqual([]);
   expect(consoleErrors, `console errors: ${consoleErrors.join(" | ")}`).toEqual([]);
 });

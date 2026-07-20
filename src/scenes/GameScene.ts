@@ -12,6 +12,7 @@ import {
   facingFromPoints,
 } from "../systems/playerCombat";
 import type { CombatantState } from "../systems/combatTypes";
+import { VehicleRuntime } from "../vehicles/VehicleRuntime";
 import { generateWorld } from "../world/generateWorld";
 import { createCollisionBodies, paintWorldTexture } from "../world/renderWorld";
 import { districtAt, type GeneratedWorld } from "../world/types";
@@ -27,6 +28,7 @@ export class GameScene extends Phaser.Scene {
   private aimLine!: Phaser.GameObjects.Rectangle;
   private world!: GeneratedWorld;
   private combat!: CombatantState;
+  private vehicles!: VehicleRuntime;
   private readonly keysDown = new Set<string>();
   private removeKeyListeners: (() => void) | null = null;
   private districtToast!: Phaser.GameObjects.Text;
@@ -65,18 +67,19 @@ export class GameScene extends Phaser.Scene {
     body.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.solids);
 
+    this.vehicles = new VehicleRuntime(this, this.world);
+    this.vehicles.spawnFleet(spawnX, spawnY);
+
     this.aimLine = this.add
       .rectangle(spawnX, spawnY, 22, 4, 0xffffff, 0.85)
       .setDepth(11)
       .setOrigin(0, 0.5);
 
-    // Contact hazard for i-frame / damage flash proof near plaza.
     this.hazard = this.add
       .rectangle(spawnX + 96, spawnY + 64, 48, 48, 0xc23b3b, 0.55)
       .setDepth(3);
     this.physics.add.existing(this.hazard, true);
 
-    // Sparring dummy for ranged/melee proof.
     const dummyRect = this.add
       .rectangle(spawnX + 140, spawnY - 40, 28, 28, 0x8a6cff)
       .setDepth(9);
@@ -102,8 +105,11 @@ export class GameScene extends Phaser.Scene {
       if (event.key === "Escape") {
         this.scene.start("TitleScene");
       }
-      if (key === "f") {
+      if (key === "f" && !this.vehicles.activeId) {
         this.tryAttack();
+      }
+      if (key === "e") {
+        this.toggleVehicle();
       }
       if (key === "r" && this.combat.health <= 0) {
         this.respawnStub();
@@ -122,7 +128,7 @@ export class GameScene extends Phaser.Scene {
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
       if (p.leftButtonDown()) {
         this.pointerDown = true;
-        this.tryAttack();
+        if (!this.vehicles.activeId) this.tryAttack();
       }
     });
     this.input.on("pointerup", () => {
@@ -137,13 +143,18 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.add
-      .text(12, 12, "WASD move · Shift sprint · Mouse aim · LMB/F fire · Esc title", {
-        fontFamily: "monospace",
-        fontSize: "14px",
-        color: COLORS.uiText,
-        backgroundColor: "#00000088",
-        padding: { x: 8, y: 6 },
-      })
+      .text(
+        12,
+        12,
+        "WASD · Shift sprint · E enter/exit · Mouse aim · LMB/F fire · Space handbrake · Esc title",
+        {
+          fontFamily: "monospace",
+          fontSize: "13px",
+          color: COLORS.uiText,
+          backgroundColor: "#00000088",
+          padding: { x: 8, y: 6 },
+        },
+      )
       .setScrollFactor(0)
       .setDepth(100);
 
@@ -183,11 +194,45 @@ export class GameScene extends Phaser.Scene {
     this.publishDebug();
   }
 
-  update(_time: number, _delta: number): void {
+  update(_time: number, delta: number): void {
     const now = this.time.now;
+    const dt = Math.min(0.05, delta / 1000);
     const body = this.player.body as Phaser.Physics.Arcade.Body;
+    const inVehicle = Boolean(this.vehicles.activeId);
+    const activeVeh = this.vehicles.active;
 
-    if (this.combat.health > 0) {
+    if (inVehicle && activeVeh) {
+      body.setVelocity(0, 0);
+      this.player.setVisible(false);
+      this.aimLine.setVisible(false);
+
+      let throttle = 0;
+      let steer = 0;
+      if (this.keysDown.has("w") || this.keysDown.has("arrowup")) throttle += 1;
+      if (this.keysDown.has("s") || this.keysDown.has("arrowdown")) throttle -= 1;
+      if (this.keysDown.has("a") || this.keysDown.has("arrowleft")) steer -= 1;
+      if (this.keysDown.has("d") || this.keysDown.has("arrowright")) steer += 1;
+      const handbrake = this.keysDown.has(" ") || this.keysDown.has("space");
+
+      this.vehicles.update(dt, { throttle, steer, handbrake });
+      this.player.setPosition(activeVeh.state.x, activeVeh.state.y);
+      this.cameras.main.startFollow(activeVeh.view, true, 0.14, 0.14);
+
+      if (activeVeh.state.destroyed) {
+        const exit = this.vehicles.tryExit();
+        if (exit) {
+          this.player.setPosition(exit.x, exit.y);
+          this.player.setVisible(true);
+          this.aimLine.setVisible(true);
+          this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+        }
+      }
+    } else if (this.combat.health > 0) {
+      this.player.setVisible(true);
+      this.aimLine.setVisible(true);
+      this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+      this.vehicles.update(dt, { throttle: 0, steer: 0, handbrake: false });
+
       let vx = 0;
       let vy = 0;
       const sprint = this.keysDown.has("shift");
@@ -216,11 +261,8 @@ export class GameScene extends Phaser.Scene {
       this.aimLine.setPosition(this.player.x, this.player.y);
       this.aimLine.setRotation(this.combat.facing);
 
-      if (this.pointerDown) {
-        this.tryAttack();
-      }
+      if (this.pointerDown) this.tryAttack();
 
-      // Hazard contact damage.
       const hz = this.hazard.getBounds();
       const pb = this.player.getBounds();
       if (Phaser.Geom.Intersects.RectangleToRectangle(hz, pb)) {
@@ -228,9 +270,9 @@ export class GameScene extends Phaser.Scene {
       }
     } else {
       body.setVelocity(0, 0);
+      this.vehicles.update(dt, { throttle: 0, steer: 0, handbrake: false });
     }
 
-    // Damage flash / i-frame tint.
     if (now < this.combat.flashUntil) {
       this.player.setFillStyle(0xffffff);
     } else if (now < this.combat.iFrameUntil) {
@@ -241,7 +283,7 @@ export class GameScene extends Phaser.Scene {
       this.player.setFillStyle(COLORS.player);
     }
 
-    this.updateProjectiles(now);
+    this.updateProjectiles();
 
     const tileX = Math.floor(this.player.x / this.world.tileSize);
     const tileY = Math.floor(this.player.y / this.world.tileSize);
@@ -253,12 +295,41 @@ export class GameScene extends Phaser.Scene {
       this.districtToast.setAlpha(Math.max(0, this.districtToast.alpha - 0.04));
     }
 
-    this.hudText.setText(
-      this.combat.health <= 0
-        ? "DOWN — press R to respawn (stub)"
-        : `HP ${Math.ceil(this.combat.health)}/${this.combat.maxHealth} · Ammo ${this.combat.ammo}`,
-    );
+    const veh = this.vehicles.active;
+    if (veh) {
+      this.hudText.setText(
+        `${veh.def.label} · HP ${Math.ceil(veh.state.health)} · spd ${Math.round(Math.abs(veh.state.speed))}${
+          veh.state.destroyed ? " · WRECKED" : ""
+        }`,
+      );
+    } else if (this.combat.health <= 0) {
+      this.hudText.setText("DOWN — press R to respawn (stub)");
+    } else {
+      this.hudText.setText(
+        `HP ${Math.ceil(this.combat.health)}/${this.combat.maxHealth} · Ammo ${this.combat.ammo}`,
+      );
+    }
     this.publishDebug();
+  }
+
+  private toggleVehicle(): void {
+    if (this.vehicles.activeId) {
+      const exit = this.vehicles.tryExit();
+      if (exit) {
+        this.player.setPosition(exit.x, exit.y);
+        this.player.setVisible(true);
+        this.aimLine.setVisible(true);
+        this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+      }
+      return;
+    }
+    if (this.combat.health <= 0) return;
+    if (this.vehicles.tryEnter(this.player.x, this.player.y)) {
+      this.player.setVisible(false);
+      this.aimLine.setVisible(false);
+      const active = this.vehicles.active;
+      if (active) this.cameras.main.startFollow(active.view, true, 0.14, 0.14);
+    }
   }
 
   private tryAttack(): void {
@@ -332,7 +403,7 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private updateProjectiles(_now: number): void {
+  private updateProjectiles(): void {
     const bounds = this.dummy.body.getBounds();
     for (const obj of this.projectiles.getChildren()) {
       const bolt = obj as Phaser.GameObjects.Rectangle;
@@ -352,6 +423,7 @@ export class GameScene extends Phaser.Scene {
     this.combat = createPlayerCombat(PLAYER.maxHealth);
     this.player.setPosition(this.world.spawn.pixelX, this.world.spawn.pixelY);
     this.player.setFillStyle(COLORS.player);
+    this.player.setVisible(true);
   }
 
   private showDistrictToast(name: string, id: string): void {
@@ -362,6 +434,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private publishDebug(): void {
+    const veh = this.vehicles.active;
     patchDebugSnapshot({
       bootCompleted: true,
       scene: "GameScene",
@@ -372,8 +445,10 @@ export class GameScene extends Phaser.Scene {
         ammo: this.combat.ammo,
         facing: this.combat.facing,
       },
-      inVehicle: false,
-      vehicle: null,
+      inVehicle: Boolean(this.vehicles.activeId),
+      vehicle: veh
+        ? { speed: veh.state.speed, health: veh.state.health }
+        : null,
       heat: 0,
       mission: { id: null, objective: null },
       counts: { pedestrians: 0, traffic: 0, police: 0 },
