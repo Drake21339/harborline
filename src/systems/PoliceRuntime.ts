@@ -76,10 +76,20 @@ export class PoliceRuntime {
         u.y += (dy / dist) * speed * dtSec;
       }
       u.view.setPosition(u.x, u.y);
-      if (heatLevel >= 4 && Math.floor(now / 200) % 2 === 0) {
+      u.view.setRotation(u.inCar ? Math.atan2(dy, dx) : 0);
+      // Readable pursuit: white/red strobe when hot; solid red in arrest range.
+      if (u.near) {
+        u.view.setFillStyle(0xff3333);
+        u.view.setScale(1.15);
+      } else if (heatLevel >= 3 && Math.floor(now / 160) % 2 === 0) {
         u.view.setFillStyle(0xffffff);
+        u.view.setScale(1.05);
+      } else if (heatLevel >= 3) {
+        u.view.setFillStyle(0xff4444);
+        u.view.setScale(1.05);
       } else {
-        u.view.setFillStyle(u.near ? 0xff5555 : 0x3a5cff);
+        u.view.setFillStyle(0x3a5cff);
+        u.view.setScale(1);
       }
     }
   }

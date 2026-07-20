@@ -69,7 +69,8 @@ export function biasedCivilianStep(args: {
   }
 
   if (!best.preferred && !args.fleeing) {
-    const deltas = [0.7, -0.7, 1.4, -1.4, Math.PI * 0.5, -Math.PI * 0.5];
+    // Wider search keeps peds on sidewalks and traffic on roads without a navmesh.
+    const deltas = [0.45, -0.45, 0.9, -0.9, 1.4, -1.4, Math.PI * 0.5, -Math.PI * 0.5, Math.PI];
     for (const d of deltas) {
       const cand = tryPos(heading + d);
       if (!cand.blocked && cand.preferred) {

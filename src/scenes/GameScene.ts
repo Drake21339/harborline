@@ -343,6 +343,14 @@ export class GameScene extends Phaser.Scene {
       this.vehicles.update(dt, { throttle, steer, handbrake });
       this.player.setPosition(activeVeh.state.x, activeVeh.state.y);
       this.cameras.main.startFollow(activeVeh.view, true, 0.14, 0.14);
+      const impact = this.vehicles.lastImpact;
+      if (impact && impact.damage > 0) {
+        const intensity = Math.min(0.012, 0.003 + impact.damage * 0.00025);
+        this.cameras.main.shake(120, intensity);
+        if (impact.impactSpeed >= 55) {
+          reportOffense(this.heat, "crash", now);
+        }
+      }
 
       if (activeVeh.state.destroyed) {
         const exit = this.vehicles.tryExit();
@@ -496,6 +504,10 @@ export class GameScene extends Phaser.Scene {
     }
 
     const playerDamaged = this.combat.health < this.lastCombatHealth;
+    if (playerDamaged) {
+      // Brief red flash so on-foot hits read without a UI dump.
+      this.cameras.main.flash(90, 180, 40, 40);
+    }
     this.lastCombatHealth = this.combat.health;
 
     const stealTargetId = this.missions.manager.active?.def.targetVehicleId ?? null;
@@ -569,13 +581,19 @@ export class GameScene extends Phaser.Scene {
       );
     }
     const pips = "●".repeat(this.heat.level) + "○".repeat(Math.max(0, 5 - this.heat.level));
+    const arresting = this.police.inArrestRange;
     this.heatHud.setText(
       this.heat.level > 0
-        ? `HEAT ${pips}  cops ${this.police.activeCount}${
-            this.police.inArrestRange ? " · ARRESTING" : ""
-          }`
+        ? `HEAT ${pips}  cops ${this.police.activeCount}${arresting ? " · ARRESTING" : ""}`
         : "HEAT ○○○○○",
     );
+    if (arresting) {
+      this.heatHud.setColor(Math.floor(now / 180) % 2 === 0 ? "#ffeeee" : "#ff5555");
+    } else if (this.heat.level >= 3) {
+      this.heatHud.setColor("#ffb4b4");
+    } else {
+      this.heatHud.setColor(this.heat.level > 0 ? "#ffc9a8" : "#c8c8c8");
+    }
 
     const activeMission = this.missions.manager.active;
     const markers =
@@ -766,13 +784,21 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnMuzzleFlash(x: number, y: number): void {
-    const flash = this.add.circle(x, y, 10, 0xfff2a8, 0.95).setDepth(13);
+    const flash = this.add.circle(x, y, 14, 0xfff2a8, 0.95).setDepth(13);
+    const ring = this.add.circle(x, y, 6, 0xffaa44, 0.7).setDepth(13);
     this.tweens.add({
       targets: flash,
       alpha: 0,
-      scale: 1.8,
-      duration: 90,
+      scale: 2.2,
+      duration: 110,
       onComplete: () => flash.destroy(),
+    });
+    this.tweens.add({
+      targets: ring,
+      alpha: 0,
+      scale: 3,
+      duration: 140,
+      onComplete: () => ring.destroy(),
     });
   }
 
@@ -901,6 +927,7 @@ export class GameScene extends Phaser.Scene {
         pedestrians: this.civilians.counts.pedestrians,
         traffic: this.civilians.counts.traffic,
         police: this.police.activeCount,
+        fleeing: this.civilians.counts.fleeing,
       },
       fps: Math.round(this.game.loop.actualFps),
       civBias: {

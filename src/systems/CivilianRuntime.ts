@@ -14,6 +14,7 @@ interface Agent {
   kind: "ped" | "car";
   fleeingUntil: number;
   active: boolean;
+  wasFleeing: boolean;
 }
 
 export class CivilianRuntime {
@@ -40,10 +41,12 @@ export class CivilianRuntime {
     this.bootstrapPool();
   }
 
-  get counts(): { pedestrians: number; traffic: number } {
+  get counts(): { pedestrians: number; traffic: number; fleeing: number } {
+    const now = this.scene.time.now;
     return {
       pedestrians: this.peds.filter((a) => a.active).length,
       traffic: this.cars.filter((a) => a.active).length,
+      fleeing: [...this.peds, ...this.cars].filter((a) => a.active && now < a.fleeingUntil).length,
     };
   }
 
@@ -121,7 +124,28 @@ export class CivilianRuntime {
 
     a.view.setPosition(a.x, a.y);
     a.view.setRotation(a.kind === "car" ? a.heading : 0);
-    a.view.setFillStyle(fleeing ? 0xffaa66 : a.kind === "car" ? 0x9aa3b5 : 0xb8c4a8);
+    if (fleeing) {
+      // Hot amber + pulse so flee reads instantly against cool city tones.
+      const pulse = 0.75 + 0.25 * Math.sin(now / 70);
+      a.view.setFillStyle(0xff7a33);
+      a.view.setAlpha(pulse);
+      a.view.setScale(a.kind === "car" ? 1.08 : 1.2);
+      if (!a.wasFleeing) {
+        const burst = this.scene.add.circle(a.x, a.y, 14, 0xffcc66, 0.55).setDepth(5);
+        this.scene.tweens.add({
+          targets: burst,
+          alpha: 0,
+          scale: 2.2,
+          duration: 280,
+          onComplete: () => burst.destroy(),
+        });
+      }
+    } else {
+      a.view.setFillStyle(a.kind === "car" ? 0x9aa3b5 : 0xb8c4a8);
+      a.view.setAlpha(1);
+      a.view.setScale(1);
+    }
+    a.wasFleeing = fleeing;
   }
 
   private maintainPopulation(focusX: number, focusY: number, _now: number): void {
@@ -160,9 +184,12 @@ export class CivilianRuntime {
       slot.y = y;
       slot.heading = this.rng.next() * Math.PI * 2;
       slot.fleeingUntil = 0;
+      slot.wasFleeing = false;
       slot.active = true;
       slot.view.setVisible(true);
       slot.view.setPosition(x, y);
+      slot.view.setScale(1);
+      slot.view.setAlpha(1);
       return;
     }
   }
@@ -178,6 +205,7 @@ export class CivilianRuntime {
         kind: "ped",
         fleeingUntil: 0,
         active: false,
+        wasFleeing: false,
       });
     }
     for (let i = 0; i < CIVILIAN_CAPS.traffic; i += 1) {
@@ -190,6 +218,7 @@ export class CivilianRuntime {
         kind: "car",
         fleeingUntil: 0,
         active: false,
+        wasFleeing: false,
       });
     }
   }

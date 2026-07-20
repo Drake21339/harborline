@@ -6,7 +6,7 @@ export interface GameDebugSnapshot {
   vehicle: { speed: number; health: number } | null;
   heat: number;
   mission: { id: string | null; objective: string | null };
-  counts: { pedestrians: number; traffic: number; police: number };
+  counts: { pedestrians: number; traffic: number; police: number; fleeing?: number };
   fps: number;
   civBias?: {
     pedPreferred: number;

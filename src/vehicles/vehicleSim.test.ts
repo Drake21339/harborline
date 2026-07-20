@@ -94,4 +94,11 @@ describe("vehicleSim", () => {
     expect(impactDamageFromSpeed(20, 12)).toBe(0);
     expect(impactDamageFromSpeed(80, 12)).toBeGreaterThan(0);
   });
+
+  it("hard impacts scale damage with speed for consequential driving", () => {
+    const soft = impactDamageFromSpeed(60, 14);
+    const hard = impactDamageFromSpeed(180, 14);
+    expect(hard).toBeGreaterThan(soft);
+    expect(hard).toBeGreaterThan(10);
+  });
 });

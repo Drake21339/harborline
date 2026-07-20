@@ -24,6 +24,8 @@ export interface RuntimeVehicle {
 export class VehicleRuntime {
   readonly vehicles: RuntimeVehicle[] = [];
   activeId: string | null = null;
+  /** Cleared by GameScene after juice (camera nudge / skid). */
+  lastImpact: { impactSpeed: number; damage: number; x: number; y: number } | null = null;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -97,6 +99,7 @@ export class VehicleRuntime {
     input: { throttle: number; steer: number; handbrake: boolean },
   ): void {
     const active = this.active;
+    this.lastImpact = null;
     for (const v of this.vehicles) {
       const isActive = active?.state.id === v.state.id;
       if (isActive && !v.state.destroyed) {
@@ -113,6 +116,36 @@ export class VehicleRuntime {
           if (dmg > 0) applyVehicleDamage(v.state, dmg);
           // Brief impact flash on the body.
           v.view.setFillStyle(0xffeeaa);
+          this.lastImpact = {
+            impactSpeed: hit.impactSpeed,
+            damage: dmg,
+            x: v.state.x,
+            y: v.state.y,
+          };
+          // Sparks at impact point.
+          if (dmg > 0) {
+            const spark = this.scene.add.circle(v.state.x, v.state.y, 8, 0xffe08a, 0.9).setDepth(11);
+            this.scene.tweens.add({
+              targets: spark,
+              alpha: 0,
+              scale: 2.4,
+              duration: 180,
+              onComplete: () => spark.destroy(),
+            });
+          }
+        }
+        // Handbrake skid marks at speed (arcade juice, not physics tire model).
+        if (input.handbrake && Math.abs(v.state.speed) > 70) {
+          const mark = this.scene.add
+            .rectangle(v.state.x, v.state.y, 10, 4, 0x1a1a1a, 0.35)
+            .setDepth(3)
+            .setRotation(v.state.heading);
+          this.scene.tweens.add({
+            targets: mark,
+            alpha: 0,
+            duration: 900,
+            onComplete: () => mark.destroy(),
+          });
         }
       }
       const braking =

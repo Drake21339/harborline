@@ -387,3 +387,24 @@ npm run test:e2e → 1 passed ~2.0s (intro + cab-boost + cool-off + vehicle + pa
 ### Next phase (Finish F2)
 
 City + drive + combat depth.
+
+---
+
+## 2026-07-20 — Finish F2 City + drive + combat depth (green)
+
+- Ped/traffic tile bias tightened (wider preferred-tile search); flee reads as amber pulse + burst ring; `__GAME_DEBUG__.counts.fleeing` published.
+- Caps held (64 ped / 40 traffic). Vehicle↔world solids still block; hard impacts cost HP, spawn sparks, camera shake, and report crash heat.
+- Handbrake skids at speed; muzzle flash ring + player-hit camera flash; police strobe/scale when hot; heat HUD pulses on ARRESTING.
+- Unit proof: preferred-tile bias >70%; impact damage scales with speed.
+
+### Verification (observed)
+
+```text
+npm run check → typecheck OK, lint OK
+npm run test → 47 passed (incl. 7 vehicleSim + 4 civilianMove)
+npm run test:e2e → 1 passed ~2.0s
+```
+
+### Next phase (Finish F3)
+
+Art-director world / title / vehicles.
