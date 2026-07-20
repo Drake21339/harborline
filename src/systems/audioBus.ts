@@ -1,3 +1,5 @@
+import { audioUrl, type MusicBed, type MusicSting } from "./audioTracks";
+
 /** Tiny Web Audio bus — unlocks only after a user gesture. */
 export type SfxKind = "pickup" | "shoot" | "ui" | "arrest" | "engine";
 
@@ -8,6 +10,10 @@ export class AudioBus {
   private ambience!: GainNode;
   private unlocked = false;
   private ambOsc: OscillatorNode | null = null;
+  private bedEl: HTMLAudioElement | null = null;
+  private bedSource: MediaElementAudioSourceNode | null = null;
+  private currentBed: MusicBed | "synth" | null = null;
+  private bedReady = new Map<MusicBed, boolean>();
   /** Distinct kinds heard since unlock (proof for polish Done-when). */
   readonly playedKinds = new Set<SfxKind>();
 
@@ -17,6 +23,10 @@ export class AudioBus {
 
   get isUnlocked(): boolean {
     return this.unlocked;
+  }
+
+  get activeBed(): MusicBed | "synth" | null {
+    return this.currentBed;
   }
 
   async unlock(): Promise<void> {
@@ -32,7 +42,7 @@ export class AudioBus {
     this.applyVolumes();
     if (this.ctx.state === "suspended") await this.ctx.resume();
     this.unlocked = true;
-    this.startAmbience();
+    await this.probeBeds();
   }
 
   setVolumes(master: number, sfx: number, ambience: number): void {
@@ -40,6 +50,49 @@ export class AudioBus {
     this.sfxVol = sfx;
     this.ambienceVol = ambience;
     this.applyVolumes();
+  }
+
+  /** Looping music bed; falls back to soft synth if file missing. */
+  setBed(bed: MusicBed): void {
+    if (!this.unlocked || !this.ctx) return;
+    if (this.currentBed === bed && this.bedEl && !this.bedEl.paused) return;
+
+    this.stopBedElement();
+    this.stopSynthAmbience();
+
+    if (this.bedReady.get(bed)) {
+      const el = new Audio(audioUrl(bed));
+      el.loop = true;
+      el.preload = "auto";
+      try {
+        this.bedSource = this.ctx.createMediaElementSource(el);
+        this.bedSource.connect(this.ambience);
+      } catch {
+        // Element may already be wired in rare HMR cases — use element volume.
+        el.volume = Math.max(0, Math.min(1, this.masterVol * this.ambienceVol));
+      }
+      void el.play().catch(() => {
+        this.startSynthAmbience();
+        this.currentBed = "synth";
+      });
+      this.bedEl = el;
+      this.currentBed = bed;
+      this.applyVolumes();
+      return;
+    }
+
+    this.startSynthAmbience();
+    this.currentBed = "synth";
+  }
+
+  playSting(kind: MusicSting): void {
+    if (!this.unlocked || !this.ctx) return;
+    const el = new Audio(audioUrl(kind));
+    el.preload = "auto";
+    el.volume = Math.max(0, Math.min(1, this.masterVol * this.sfxVol * 0.9));
+    void el.play().catch(() => {
+      /* missing file — ignore */
+    });
   }
 
   playSfx(kind: SfxKind): void {
@@ -70,16 +123,53 @@ export class AudioBus {
     }
   }
 
+  private async probeBeds(): Promise<void> {
+    const kinds: MusicBed[] = ["title", "city", "heat"];
+    await Promise.all(
+      kinds.map(async (k) => {
+        try {
+          // Prefer HEAD; some hosts only answer GET — either proves the drop-in exists.
+          let res = await fetch(audioUrl(k), { method: "HEAD" });
+          if (!res.ok) res = await fetch(audioUrl(k), { method: "GET", headers: { Range: "bytes=0-1" } });
+          this.bedReady.set(k, res.ok);
+        } catch {
+          this.bedReady.set(k, false);
+        }
+      }),
+    );
+  }
+
   private applyVolumes(): void {
     if (!this.unlocked) return;
     this.master.gain.value = this.masterVol;
     this.sfx.gain.value = this.sfxVol;
     this.ambience.gain.value = this.ambienceVol;
+    if (this.bedEl && !this.bedSource) {
+      this.bedEl.volume = Math.max(0, Math.min(1, this.masterVol * this.ambienceVol));
+    }
   }
 
-  private startAmbience(): void {
+  private stopBedElement(): void {
+    if (this.bedEl) {
+      this.bedEl.pause();
+      this.bedEl.src = "";
+      this.bedEl = null;
+    }
+    this.bedSource = null;
+  }
+
+  private stopSynthAmbience(): void {
+    try {
+      this.ambOsc?.stop();
+    } catch {
+      /* already stopped */
+    }
+    this.ambOsc = null;
+  }
+
+  private startSynthAmbience(): void {
     if (!this.ctx) return;
-    this.ambOsc?.stop();
+    this.stopSynthAmbience();
     const osc = this.ctx.createOscillator();
     const g = this.ctx.createGain();
     osc.type = "sine";

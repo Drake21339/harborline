@@ -64,15 +64,26 @@ export class TitleScene extends Phaser.Scene {
     });
 
     let started = false;
+    let musicPrimed = false;
+    const primeMusic = (): void => {
+      if (musicPrimed) return;
+      musicPrimed = true;
+      void audioBus.unlock().then(() => {
+        if (!started) audioBus.setBed("title");
+      });
+    };
     const start = (): void => {
       if (started) return;
       started = true;
-      void audioBus.unlock();
-      audioBus.playSfx("ui");
-      this.scene.start("GameScene");
+      void audioBus.unlock().then(() => {
+        audioBus.playSfx("ui");
+        audioBus.setBed("city");
+        this.scene.start("GameScene");
+      });
     };
 
     const onKeyDown = (event: KeyboardEvent): void => {
+      primeMusic();
       if (event.key === "Enter") start();
     };
     window.addEventListener("keydown", onKeyDown);
@@ -83,6 +94,9 @@ export class TitleScene extends Phaser.Scene {
     });
 
     this.input.keyboard?.once("keydown-ENTER", start);
+    this.input.on("pointerdown", () => {
+      primeMusic();
+    });
     this.input.once("pointerdown", start);
   }
 

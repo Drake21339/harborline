@@ -470,8 +470,17 @@ export class GameScene extends Phaser.Scene {
       (cash) => {
         this.wallet.cash += cash;
         this.wallet.score += cash;
+        audioBus.playSting("win");
+      },
+      () => {
+        audioBus.playSting("fail");
       },
     );
+
+    // Music beds: chase when heat is up, otherwise city cruise.
+    if (audioBus.isUnlocked) {
+      audioBus.setBed(this.heat.level >= 2 ? "heat" : "city");
+    }
 
     const tileX = Math.floor(this.player.x / this.world.tileSize);
     const tileY = Math.floor(this.player.y / this.world.tileSize);
@@ -656,6 +665,7 @@ export class GameScene extends Phaser.Scene {
     this.aimLine.setVisible(true);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
     audioBus.playSfx("arrest");
+    audioBus.playSting("fail");
     writeSave({ ...this.save, cash: this.wallet.cash, score: this.wallet.score });
   }
 

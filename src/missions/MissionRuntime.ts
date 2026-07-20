@@ -94,6 +94,7 @@ export class MissionRuntime {
       targetVehiclePresent: boolean;
     },
     onReward: (cash: number) => void,
+    onFail?: () => void,
   ): void {
     const result = this.manager.tick({
       playerX,
@@ -107,6 +108,9 @@ export class MissionRuntime {
     });
     if (result?.status === "success" && result.reward > 0) {
       onReward(result.reward);
+    }
+    if (result?.status === "failed") {
+      onFail?.();
     }
 
     const active = this.manager.active;

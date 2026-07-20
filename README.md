@@ -55,7 +55,18 @@ Fully playable **with or without a mouse** (keyboard-first).
 - Pooled pedestrians + traffic (sidewalk/road bias, flee reactions, caps ~64/40)
 - Heat 0–5 with police pursuit / arrest / decay
 - Five mission types, each startable in-world from plaza accept markers
-- HUD, cached minimap (M expand), Web Audio after gesture (pickup/shoot/ui/arrest/engine), localStorage save
+- HUD, cached minimap (M expand), Web Audio after gesture (SFX + Suno beds in `public/audio/`), localStorage save
+
+## Music (Suno)
+
+Drop MP3s in [`public/audio/`](/Users/danielkirkpatrick/GAMES/NOT_GTA_1/public/audio/) (see [`docs/SUNO-INSTRUMENTAL-PROMPTS.md`](/Users/danielkirkpatrick/GAMES/NOT_GTA_1/docs/SUNO-INSTRUMENTAL-PROMPTS.md)):
+
+- `title-theme (harborline).mp3` — title (any key/click unlocks)
+- `city-night (harborline).mp3` — in-game cruise
+- `heat-chase (harborline).mp3` — heat ≥ 2
+- `mission-win (harborline).mp3` / `mission-fail (harborline).mp3` — stings
+
+Pause **ambience** volume controls the music beds.
 
 ## Mission types (one each)
 

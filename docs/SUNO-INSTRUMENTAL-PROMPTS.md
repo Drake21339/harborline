@@ -4,13 +4,17 @@ Plain English: generate these in **Suno Custom Mode**, download audio, drop the 
 
 **Drop-in folder:** `/Users/danielkirkpatrick/GAMES/NOT_GTA_1/public/audio/`
 
-| Role | Filename | Length aim |
-|---|---|---|
-| Title / menu | `title-theme.ogg` (or `.mp3`) | 60–120s, loop-friendly |
-| City cruise | `city-night.ogg` | 90–180s, seamless loop vibe |
-| Heat / chase | `heat-chase.ogg` | 60–120s, tense |
-| Mission success sting | `mission-win.ogg` | 5–15s one-shot |
-| Bust / fail sting | `mission-fail.ogg` | 5–15s one-shot |
+**Wired filenames (current):** Daniel’s Suno exports with `(harborline)` suffix:
+
+| Role | Filename on disk |
+|---|---|
+| Title / menu | `title-theme (harborline).mp3` |
+| City cruise | `city-night (harborline).mp3` |
+| Heat / chase | `heat-chase (harborline).mp3` |
+| Mission success sting | `mission-win (harborline).mp3` |
+| Bust / fail sting | `mission-fail (harborline).mp3` |
+
+Alternate short names (`title-theme.ogg` etc.) are fine only if you also update `src/systems/audioTracks.ts`.
 
 **Suno notes:** Custom Mode · paste STYLE / EXCLUDE / LYRICS as separate fields · **instrumental only** · do not name real artists or GTA/Rockstar · Free-tier tracks are non-commercial forever if that matters for a future release · Prefer OGG or MP3.
 
