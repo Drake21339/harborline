@@ -34,3 +34,26 @@ Preflight: scripts/identity/node/npm/scripts OK; FAIL only because no git commit
 ### Next slice (Build Order #2)
 
 Seeded worldgen with real collision / districts (replace placeholder grid).
+
+---
+
+## 2026-07-20 — Slice 2 World (green)
+
+- Seeded `generateWorld("harborline-1997")`: 128×128 tiles, 5 districts (Pier Ward, Midstack, Ridge Hollow, Freight Cut, Greenbelt).
+- Roads/sidewalks/buildings/parks + water + south freight fence boundary.
+- Midstack plaza spawn pad kept clear for future parked vehicles.
+- RenderTexture paint + merged static collision bodies; camera follow retained; district-name toast on enter.
+- Unit tests: deterministic fingerprint/tiles/spawn; solid/road counts; clear spawn pad.
+
+### Verification (observed)
+
+```text
+npm run check → typecheck OK, lint OK
+npm run test → 6 passed (2 rng + 4 worldgen)
+npm run build → OK
+npm run test:e2e → 1 passed (boots, starts, moves) ~1.1s
+```
+
+### Next slice (Build Order #3)
+
+On-foot loop: sprint, mouse aim, ranged+melee, health/i-frames.

@@ -19,6 +19,8 @@ export const COLORS = {
   ground: 0x2f3b2f,
   road: 0x3a3a42,
   building: 0x5a4a3a,
+  water: 0x2a4a6a,
+  park: 0x3a6b3e,
   player: 0xf2c14e,
   uiText: "#e8eefc",
   uiMuted: "#9db0d0",
