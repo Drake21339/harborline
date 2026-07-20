@@ -1,0 +1,82 @@
+{
+  "image": "cars-civ.png",
+  "frameWidth": 116,
+  "frameHeight": 72,
+  "contentWidth": 96,
+  "contentHeight": 52,
+  "pad": 10,
+  "cols": 5,
+  "rows": 2,
+  "frames": [
+    {
+      "index": 0,
+      "name": "compact",
+      "role": "civilian",
+      "col": 0,
+      "row": 0
+    },
+    {
+      "index": 1,
+      "name": "sedan",
+      "role": "civilian",
+      "col": 1,
+      "row": 0
+    },
+    {
+      "index": 2,
+      "name": "sports",
+      "role": "civilian",
+      "col": 2,
+      "row": 0
+    },
+    {
+      "index": 3,
+      "name": "van",
+      "role": "civilian",
+      "col": 3,
+      "row": 0
+    },
+    {
+      "index": 4,
+      "name": "pickup",
+      "role": "civilian",
+      "col": 4,
+      "row": 0
+    },
+    {
+      "index": 5,
+      "name": "muscle",
+      "role": "civilian",
+      "col": 0,
+      "row": 1
+    },
+    {
+      "index": 6,
+      "name": "orange",
+      "role": "civilian",
+      "col": 1,
+      "row": 1
+    },
+    {
+      "index": 7,
+      "name": "service",
+      "role": "civilian",
+      "col": 2,
+      "row": 1
+    },
+    {
+      "index": 8,
+      "name": "luxury",
+      "role": "civilian",
+      "col": 3,
+      "row": 1
+    },
+    {
+      "index": 9,
+      "name": "taxi",
+      "role": "civilian",
+      "col": 4,
+      "row": 1
+    }
+  ]
+}

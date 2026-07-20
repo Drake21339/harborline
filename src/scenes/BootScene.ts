@@ -1,10 +1,15 @@
 import Phaser from "phaser";
+import { loadPixelAtlases } from "../art/pixelAtlases";
 import { COLORS, GAME_TITLE } from "../config/gameConfig";
 import { patchDebugSnapshot } from "../systems/debugSnapshot";
 
 export class BootScene extends Phaser.Scene {
   constructor() {
     super("BootScene");
+  }
+
+  preload(): void {
+    loadPixelAtlases(this);
   }
 
   create(): void {

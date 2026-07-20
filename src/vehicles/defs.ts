@@ -4,7 +4,8 @@ export type VehicleArchetypeId =
   | "sports"
   | "van"
   | "taxi"
-  | "police";
+  | "police"
+  | "ambulance";
 
 export interface VehicleDef {
   id: VehicleArchetypeId;
@@ -26,12 +27,12 @@ export interface VehicleDef {
   enginePitchMax: number;
 }
 
-/** Exactly six Harborline archetypes — original labels, no IP names. */
+/** Harborline vehicle archetypes — original labels, no IP names. */
 export const VEHICLE_DEFS: Record<VehicleArchetypeId, VehicleDef> = {
   compact: {
     id: "compact",
     label: "Compact",
-    color: 0x6ec6ff,
+    color: 0xe24a4a,
     width: 48,
     height: 24,
     maxSpeed: 220,
@@ -65,7 +66,7 @@ export const VEHICLE_DEFS: Record<VehicleArchetypeId, VehicleDef> = {
   sports: {
     id: "sports",
     label: "Sports",
-    color: 0xff5a5a,
+    color: 0x2a6aff,
     width: 52,
     height: 24,
     maxSpeed: 320,
@@ -82,7 +83,7 @@ export const VEHICLE_DEFS: Record<VehicleArchetypeId, VehicleDef> = {
   van: {
     id: "van",
     label: "Van",
-    color: 0xd2a86a,
+    color: 0x3a8a5a,
     width: 62,
     height: 30,
     maxSpeed: 190,
@@ -130,6 +131,23 @@ export const VEHICLE_DEFS: Record<VehicleArchetypeId, VehicleDef> = {
     enginePitchMin: 0.75,
     enginePitchMax: 1.5,
   },
+  ambulance: {
+    id: "ambulance",
+    label: "Medic Van",
+    color: 0xe8e8e8,
+    width: 60,
+    height: 28,
+    maxSpeed: 240,
+    accel: 220,
+    reverse: 120,
+    steer: 2.3,
+    grip: 0.88,
+    mass: 1.25,
+    durability: 120,
+    collisionDamage: 14,
+    enginePitchMin: 0.7,
+    enginePitchMax: 1.35,
+  },
 };
 
 export const VEHICLE_ARCHETYPE_ORDER: VehicleArchetypeId[] = [
@@ -139,4 +157,5 @@ export const VEHICLE_ARCHETYPE_ORDER: VehicleArchetypeId[] = [
   "van",
   "taxi",
   "police",
+  "ambulance",
 ];

@@ -646,3 +646,27 @@ Daniel: “literally nothing changed.” Live proof: `use3d: true` and cars rend
 **Causes:** (1) InstancedMesh frustum-culled at origin once camera left map corner; (2) `vertexColors: true` without geometry colors blanked `setColorAt` instance colors; (3) Phaser clear/compositing fights.
 
 **Fix in `0d70245`:** `frustumCulled = false`, white base material + instance colors only, transparent Phaser clear, canvas aligned to Phaser FIT box. Hard-reload `npm run dev` to see roads/water/buildings.
+
+---
+
+## 2026-07-20 — HD Pixel Pier Ward vertical slice (v0.5.0)
+
+Daniel rejected mesh-box beauty; GPT HD pixel refs became the target. Implemented ADR-010.
+
+### Locked decisions
+
+- Retire Three.js `WorldRenderer3D` / remove `three` dependency
+- Phaser HD pixel atlases (`public/art/atlases/`) + Pier Ward `paintWorldTexture`
+- Production atlas generator: `scripts/generate-pixel-atlases.py` (stand-in until GPT sheets land in `public/art/refs/`)
+- Scope: Pier Ward vertical slice; expand via `docs/WALKAWAY-AFK-PIXEL-PRESENTATION-PROMPT.md`
+
+### Shipped
+
+- Sprite vehicles (no box-in-box), civilian/traffic/SWAT/police sprites, ambulance archetype
+- Pier Ward night asphalt/water/neon/facades/props; neon HUD + minimap chrome
+- Docs: ART-DIRECTION, ADR-010, PIXEL-ATLAS-MAP, walk-away pixel prompts
+- Version strings **0.5.0** (tag pending Daniel)
+
+### Note on art source
+
+Cloud/agent env did not include the GPT PNG attachments; generated atlases match that direction. Drop sheets into `public/art/refs/` and re-slice keeping frame indices in `docs/art/PIXEL-ATLAS-MAP.md`.

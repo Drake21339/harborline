@@ -2,31 +2,37 @@
 
 ## Label (use this)
 
-**Top-down 3D** — 3D-looking city, vehicles, and characters under a **locked top-down / bird’s-eye gameplay camera**.
+**HD top-down pixel** — authored pixel-art city, vehicles, and characters under a **locked top-down / bird’s-eye gameplay camera**.
 
-Not the hard term: “2.5D” (too ambiguous). Casual nickname only.
+Not the hard term: “2.5D”. Not mesh/Three.js boxes.
 
 ## What stays 2D (gameplay)
 
 - Top-down camera and arcade controls (keyboard-first, mouse optional)
 - Formula: walk, drive, heat, missions, sandbox city — 1997 GTA *feel*, original content
 
-## What “3D” means here
+## What “HD pixel” means here
 
-- Buildings/cars/people are real 3D meshes with height, lighting, and readable facades (ADR-009)
+- Depth comes from **shading, facades, drop shadows, neon/sodium glow, and clutter** in sprites and baked world paint — not extruded meshes
+- Cars/people are **sprite sheets** (rotated frames OK; full walk cycles later)
 - Camera does **not** become free third-person orbit like GTA III+
 
-## Current build (v0.4.1 Graphics Beauty)
+## Current build (v0.5.0 Pier Ward vertical slice)
 
-- **Three.js** orthographic mesh city under **transparent** Phaser HUD/input/physics (ADR-009)
-- District height/color bands, road-class markings, sodium street glow
-- Archetype vehicle silhouettes + ped/cop body cues; paint-shop tint on meshes
+- Phaser-only presentation (Three.js city path **retired**, ADR-010)
+- Pier Ward night waterfront paint + shared road language
+- Production pixel atlases in `public/art/atlases/` (see `docs/art/PIXEL-ATLAS-MAP.md`)
 - Brand-first title (Harborline hero wordmark + pier motif)
-- Fallback: baked Phaser `paintWorldTexture` if WebGL cannot start
+- Suno beds in `public/audio/`
+
+## Hard bans
+
+- Do **not** reintroduce Three.js world meshes or “box-in-box” vehicle overlays
+- Do **not** treat flat interim rectangles as the forever end state — prefer atlas frames
+- No GTA IP assets, maps, names, audio, or reverse-engineered source
 
 ## For agents
 
-- Do **not** treat flat interim art as the forever end state (ADR-005 / ADR-009).
-- Prefer mesh/material/lighting iteration over painting more 2D faux roofs.
-- **Graphics beauty AFK** (art-only on the Three.js layer): `docs/WALKAWAY-AFK-GRAPHICS-BEAUTY-PROMPT.md` + `docs/GROK-GRAPHICS-BEAUTY-SLICES.md`.
-- Suno instrumentals: `docs/SUNO-INSTRUMENTAL-PROMPTS.md` → drop files in `public/audio/`.
+- Expand district polish after Pier Ward proves the look
+- Walk-away: `docs/WALKAWAY-AFK-PIXEL-PRESENTATION-PROMPT.md`
+- Suno instrumentals: `docs/SUNO-INSTRUMENTAL-PROMPTS.md` → `public/audio/`

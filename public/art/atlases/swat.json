@@ -1,0 +1,82 @@
+{
+  "image": "swat.png",
+  "frameWidth": 56,
+  "frameHeight": 56,
+  "contentWidth": 36,
+  "contentHeight": 36,
+  "pad": 10,
+  "cols": 5,
+  "rows": 2,
+  "frames": [
+    {
+      "index": 0,
+      "name": "swat-0",
+      "role": "swat",
+      "col": 0,
+      "row": 0
+    },
+    {
+      "index": 1,
+      "name": "swat-1",
+      "role": "swat",
+      "col": 1,
+      "row": 0
+    },
+    {
+      "index": 2,
+      "name": "swat-2",
+      "role": "swat",
+      "col": 2,
+      "row": 0
+    },
+    {
+      "index": 3,
+      "name": "swat-3",
+      "role": "swat",
+      "col": 3,
+      "row": 0
+    },
+    {
+      "index": 4,
+      "name": "swat-4",
+      "role": "swat",
+      "col": 4,
+      "row": 0
+    },
+    {
+      "index": 5,
+      "name": "swat-5",
+      "role": "swat",
+      "col": 0,
+      "row": 1
+    },
+    {
+      "index": 6,
+      "name": "swat-6",
+      "role": "swat",
+      "col": 1,
+      "row": 1
+    },
+    {
+      "index": 7,
+      "name": "swat-7",
+      "role": "swat",
+      "col": 2,
+      "row": 1
+    },
+    {
+      "index": 8,
+      "name": "swat-8",
+      "role": "swat",
+      "col": 3,
+      "row": 1
+    },
+    {
+      "index": 9,
+      "name": "swat-9",
+      "role": "swat",
+      "col": 4,
+      "row": 1
+    }
+  ]
+}

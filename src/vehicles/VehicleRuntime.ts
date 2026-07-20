@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { VEHICLE_FRAME } from "../art/pixelAtlases";
 import type { GeneratedWorld } from "../world/types";
 import { VEHICLE_DEFS, type VehicleArchetypeId, type VehicleDef } from "./defs";
 import {
@@ -17,10 +18,11 @@ import {
 export interface RuntimeVehicle {
   state: VehicleSimState;
   def: VehicleDef;
+  /** Invisible physics proxy (arcade body). */
   view: Phaser.GameObjects.Rectangle;
-  roof: Phaser.GameObjects.Rectangle;
-  shadow: Phaser.GameObjects.Rectangle;
-  headlight: Phaser.GameObjects.Rectangle;
+  /** HD pixel body sprite. */
+  sprite: Phaser.GameObjects.Image;
+  shadow: Phaser.GameObjects.Ellipse;
   brakeLight: Phaser.GameObjects.Rectangle;
 }
 
@@ -30,9 +32,7 @@ export class VehicleRuntime {
   /** Cleared by GameScene after juice (camera nudge / skid). */
   lastImpact: { impactSpeed: number; damage: number; x: number; y: number } | null = null;
   private lastSkidAt = 0;
-  /** When Three.js draws vehicles, hide Phaser body art (keep physics rect). */
   private overlayVisible = true;
-  /** Runtime paint overrides (paint shop). */
   private readonly paintColors = new Map<string, number>();
 
   constructor(
@@ -49,26 +49,25 @@ export class VehicleRuntime {
       { id: "van", x: spawnX - 20, y: spawnY + 110, heading: Math.PI },
       { id: "taxi", x: spawnX + 200, y: spawnY - 20, heading: 1.2 },
       { id: "police", x: spawnX - 140, y: spawnY - 60, heading: -1.0 },
+      { id: "ambulance", x: spawnX + 160, y: spawnY + 40, heading: 0.6 },
     ];
 
     for (const p of placements) {
       const def = VEHICLE_DEFS[p.id];
       const state = createVehicleState(`veh-${p.id}`, def, p.x, p.y, p.heading);
+      const frameInfo = VEHICLE_FRAME[p.id] ?? VEHICLE_FRAME.sedan!;
       const shadow = this.scene.add
-        .rectangle(p.x + 4, p.y + 5, def.width, def.height, 0x000000, 0.35)
+        .ellipse(p.x + 4, p.y + 6, def.width * 0.95, def.height * 0.7, 0x000000, 0.35)
         .setDepth(7)
         .setRotation(p.heading);
-      const view = this.scene.add
-        .rectangle(p.x, p.y, def.width, def.height, def.color)
+      const sprite = this.scene.add
+        .image(p.x, p.y, frameInfo.atlas, frameInfo.frame)
         .setDepth(8)
-        .setRotation(p.heading);
-      const roof = this.scene.add
-        .rectangle(p.x, p.y, def.width * 0.62, def.height * 0.42, blend(def.color, 0x102030, 0.35))
-        .setDepth(9)
-        .setRotation(p.heading);
-      const headlight = this.scene.add
-        .rectangle(p.x, p.y, 5, 4, 0xfff2c0, 0.95)
-        .setDepth(10)
+        .setRotation(p.heading)
+        .setDisplaySize(def.width + 18, def.height + 14);
+      const view = this.scene.add
+        .rectangle(p.x, p.y, def.width, def.height, 0xffffff, 0)
+        .setDepth(8.1)
         .setRotation(p.heading);
       this.scene.physics.add.existing(view);
       const body = view.body as Phaser.Physics.Arcade.Body;
@@ -77,7 +76,7 @@ export class VehicleRuntime {
       const brakeLight = this.scene.add
         .rectangle(p.x, p.y, 8, 4, 0xff3030, 0)
         .setDepth(10);
-      this.vehicles.push({ state, def, view, roof, shadow, headlight, brakeLight });
+      this.vehicles.push({ state, def, view, sprite, shadow, brakeLight });
     }
   }
 
@@ -89,12 +88,10 @@ export class VehicleRuntime {
   setOverlayVisible(visible: boolean): void {
     this.overlayVisible = visible;
     for (const v of this.vehicles) {
-      v.roof.setVisible(visible);
+      v.sprite.setVisible(visible);
       v.shadow.setVisible(visible);
-      v.headlight.setVisible(visible);
       v.brakeLight.setVisible(visible);
-      // Keep a nearly-invisible body for physics / enter radius.
-      v.view.setAlpha(visible ? 1 : 0.02);
+      v.view.setAlpha(0);
     }
   }
 
@@ -103,7 +100,7 @@ export class VehicleRuntime {
     const v = this.vehicles.find((x) => x.state.id === vehicleId);
     if (v) {
       v.def = { ...v.def, color };
-      v.view.setFillStyle(color);
+      v.sprite.setTint(color);
     }
   }
 
@@ -176,7 +173,6 @@ export class VehicleRuntime {
         const prevX = v.state.x;
         const prevY = v.state.y;
         stepVehicle(v.state, v.def, input, dtSec);
-        // Soft world bounds.
         const max = this.world.width * this.world.tileSize - 8;
         v.state.x = Math.max(8, Math.min(max, v.state.x));
         v.state.y = Math.max(8, Math.min(max, v.state.y));
@@ -184,15 +180,13 @@ export class VehicleRuntime {
         if (hit.hit) {
           const dmg = impactDamageFromSpeed(hit.impactSpeed, v.def.collisionDamage);
           if (dmg > 0) applyVehicleDamage(v.state, dmg);
-          // Brief impact flash on the body.
-          v.view.setFillStyle(0xffeeaa);
+          v.sprite.setTint(0xffeeaa);
           this.lastImpact = {
             impactSpeed: hit.impactSpeed,
             damage: dmg,
             x: v.state.x,
             y: v.state.y,
           };
-          // Sparks at impact point.
           if (dmg > 0) {
             const spark = this.scene.add.circle(v.state.x, v.state.y, 8, 0xffe08a, 0.9).setDepth(11);
             this.scene.tweens.add({
@@ -204,7 +198,6 @@ export class VehicleRuntime {
             });
           }
         }
-        // Handbrake skid marks at speed (rate-limited — avoid tween spam).
         const nowMs = Date.now();
         if (input.handbrake && Math.abs(v.state.speed) > 70 && nowMs - this.lastSkidAt > 90) {
           this.lastSkidAt = nowMs;
@@ -218,6 +211,16 @@ export class VehicleRuntime {
             duration: 900,
             onComplete: () => mark.destroy(),
           });
+          // Tire smoke puff
+          const smoke = this.scene.add.circle(v.state.x, v.state.y, 10, 0xc8c8c8, 0.45).setDepth(9);
+          this.scene.tweens.add({
+            targets: smoke,
+            alpha: 0,
+            scale: 2.6,
+            y: v.state.y - 8,
+            duration: 420,
+            onComplete: () => smoke.destroy(),
+          });
         }
       }
       const braking =
@@ -226,7 +229,6 @@ export class VehicleRuntime {
     }
   }
 
-  /** Debug smash for tests / missions later. */
   damageActive(amount: number): void {
     const active = this.active;
     if (!active) return;
@@ -266,59 +268,57 @@ export class VehicleRuntime {
     v.shadow.setRotation(v.state.heading);
     v.view.setPosition(v.state.x, v.state.y);
     v.view.setRotation(v.state.heading);
-    // Cabin sits slightly aft of nose for silhouette readability.
-    v.roof.setPosition(v.state.x - c * 2, v.state.y - s * 2);
-    v.roof.setRotation(v.state.heading);
-    // Don't overwrite a same-frame impact flash (pale yellow).
+    v.sprite.setPosition(v.state.x, v.state.y);
+    v.sprite.setRotation(v.state.heading);
+
     const baseColor = this.paintColors.get(v.state.id) ?? v.def.color;
-    if (v.view.fillColor !== 0xffeeaa) {
-      const bodyColor = stageTint(baseColor, stage);
-      v.view.setFillStyle(bodyColor);
-      v.roof.setFillStyle(blend(bodyColor, 0x0a1520, 0.4));
+    const flashTint = v.sprite.tintTopLeft === 0xffeeaa;
+    if (!flashTint) {
+      if (this.paintColors.has(v.state.id)) {
+        v.sprite.setTint(stageTint(baseColor, stage));
+      } else if (stage === "destroyed") {
+        v.sprite.setTint(0x442222);
+      } else if (stage === "critical") {
+        v.sprite.setTint(stageTint(0xffffff, stage));
+      } else {
+        v.sprite.clearTint();
+      }
     }
+
     const show = !v.state.destroyed || stage === "destroyed";
-    v.view.setVisible(show);
-    v.view.setAlpha(this.overlayVisible ? (stage === "destroyed" ? 0.85 : 1) : 0.02);
-    v.roof.setVisible(this.overlayVisible && show && stage !== "destroyed");
+    v.view.setVisible(true);
+    v.view.setAlpha(0);
+    v.sprite.setVisible(this.overlayVisible && show);
     v.shadow.setVisible(this.overlayVisible && show);
-    v.headlight.setVisible(this.overlayVisible && show && stage !== "destroyed");
+
     if (this.overlayVisible) {
       if (stage === "critical") {
         const a = 0.75 + 0.25 * Math.sin(Date.now() / 90);
-        v.view.setAlpha(a);
-        v.roof.setAlpha(a);
+        v.sprite.setAlpha(a);
       } else if (stage === "destroyed") {
-        v.view.setAlpha(0.85);
+        v.sprite.setAlpha(0.85);
       } else {
-        v.view.setAlpha(1);
-        v.roof.setAlpha(1);
+        v.sprite.setAlpha(1);
       }
     } else {
-      v.view.setAlpha(0.02);
-      v.roof.setAlpha(0);
+      v.sprite.setAlpha(0);
     }
+
     if (v.state.destroyed) {
-      v.view.setFillStyle(0x442222);
-      v.roof.setVisible(false);
-      v.headlight.setVisible(false);
+      v.sprite.setTint(0x442222);
       v.brakeLight.setAlpha(0);
     } else if (this.overlayVisible) {
-      const noseX = v.state.x + c * (v.def.width * 0.38);
-      const noseY = v.state.y + s * (v.def.width * 0.38);
-      v.headlight.setPosition(noseX, noseY);
-      v.headlight.setRotation(v.state.heading);
-      v.headlight.setAlpha(0.85);
       const backX = v.state.x - c * (v.def.width * 0.35);
       const backY = v.state.y - s * (v.def.width * 0.35);
       v.brakeLight.setPosition(backX, backY);
       v.brakeLight.setRotation(v.state.heading);
       v.brakeLight.setDisplaySize(braking ? 14 : 8, braking ? 6 : 4);
       v.brakeLight.setFillStyle(braking ? 0xff1818 : 0xaa2020);
-      v.brakeLight.setAlpha(braking || v.state.speed < -10 ? 1 : 0.2);
+      v.brakeLight.setAlpha(braking || v.state.speed < -10 ? 1 : 0.15);
     } else {
       v.brakeLight.setAlpha(0);
-      v.headlight.setAlpha(0);
     }
+
     const body = v.view.body as Phaser.Physics.Arcade.Body | null;
     if (body) {
       body.reset(v.state.x, v.state.y);
@@ -328,17 +328,4 @@ export class VehicleRuntime {
       }
     }
   }
-}
-
-function blend(a: number, b: number, t: number): number {
-  const ar = (a >> 16) & 0xff;
-  const ag = (a >> 8) & 0xff;
-  const ab = a & 0xff;
-  const br = (b >> 16) & 0xff;
-  const bg = (b >> 8) & 0xff;
-  const bb = b & 0xff;
-  const r = Math.round(ar + (br - ar) * t);
-  const g = Math.round(ag + (bg - ag) * t);
-  const bl = Math.round(ab + (bb - ab) * t);
-  return (r << 16) | (g << 8) | bl;
 }

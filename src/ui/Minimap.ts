@@ -21,11 +21,11 @@ export class Minimap {
     private readonly world: GeneratedWorld,
   ) {
     this.frame = scene.add
-      .rectangle(0, 0, this.miniSize + 8, this.miniSize + 8, 0x0a121c, 0.82)
+      .rectangle(0, 0, this.miniSize + 8, this.miniSize + 8, 0x061018, 0.88)
       .setScrollFactor(0)
       .setDepth(110)
       .setOrigin(1, 0)
-      .setStrokeStyle(2, 0xc8b84a, 0.55);
+      .setStrokeStyle(2, 0x3ad0ff, 0.75);
     this.base = scene.add
       .renderTexture(0, 0, this.expandSize, this.expandSize)
       .setScrollFactor(0)

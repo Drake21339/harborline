@@ -1,0 +1,68 @@
+{
+  "image": "cars-police.png",
+  "frameWidth": 116,
+  "frameHeight": 72,
+  "contentWidth": 96,
+  "contentHeight": 52,
+  "pad": 10,
+  "cols": 4,
+  "rows": 2,
+  "frames": [
+    {
+      "index": 0,
+      "name": "patrol-0",
+      "role": "police",
+      "col": 0,
+      "row": 0
+    },
+    {
+      "index": 1,
+      "name": "patrol-1",
+      "role": "police",
+      "col": 1,
+      "row": 0
+    },
+    {
+      "index": 2,
+      "name": "patrol-2",
+      "role": "police",
+      "col": 2,
+      "row": 0
+    },
+    {
+      "index": 3,
+      "name": "patrol-3",
+      "role": "police",
+      "col": 3,
+      "row": 0
+    },
+    {
+      "index": 4,
+      "name": "patrol-4",
+      "role": "police",
+      "col": 0,
+      "row": 1
+    },
+    {
+      "index": 5,
+      "name": "patrol-5",
+      "role": "police",
+      "col": 1,
+      "row": 1
+    },
+    {
+      "index": 6,
+      "name": "patrol-6",
+      "role": "police",
+      "col": 2,
+      "row": 1
+    },
+    {
+      "index": 7,
+      "name": "patrol-7",
+      "role": "police",
+      "col": 3,
+      "row": 1
+    }
+  ]
+}
