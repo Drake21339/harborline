@@ -460,3 +460,26 @@ npm run test:e2e → 1 passed ~2.9s (HUD/minimap/pause/help screenshots)
 ### Next phase (Finish F5)
 
 Audio productize + Suno slots.
+
+---
+
+## 2026-07-20 — Finish F5 Audio productize + Suno slots (green)
+
+- Drop-in contract: `src/systems/audioTracks.ts` → exact `(harborline).mp3` names; URL-encoded spaces; synth fallback if missing.
+- Beds: title / city / heat via `setBed`; stings win/fail; SFX kinds pickup/shoot/ui/arrest/engine/**crash**.
+- README Music table lists exact filenames; pause ambience = beds.
+- E2E proves ≥4 SFX kinds + all three beds probe ready + HTTP 200 for title file.
+
+### Verification (observed)
+
+```text
+npm run check → typecheck OK, lint OK
+npm run test → 49 passed (incl. 2 audioTracks)
+npm run test:e2e → 1 passed ~2.9s (beds ready + SFX ≥4)
+```
+
+Files present in `public/audio/`: title-theme, city-night, heat-chase, mission-win, mission-fail (harborline).
+
+### Next phase (Finish F6)
+
+Performance, verify, version 0.3.0, completion report.

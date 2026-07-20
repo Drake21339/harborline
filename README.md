@@ -59,14 +59,20 @@ Fully playable **with or without a mouse** (keyboard-first).
 
 ## Music (Suno)
 
-Drop MP3s in [`public/audio/`](/Users/danielkirkpatrick/GAMES/NOT_GTA_1/public/audio/) (see [`docs/SUNO-INSTRUMENTAL-PROMPTS.md`](/Users/danielkirkpatrick/GAMES/NOT_GTA_1/docs/SUNO-INSTRUMENTAL-PROMPTS.md)):
+Plain English: drop your Suno MP3s into the folder with these **exact** names — the game picks them up after any key/click unlocks audio. Missing files fall back to soft synth beds (no crash).
 
-- `title-theme (harborline).mp3` — title (any key/click unlocks)
-- `city-night (harborline).mp3` — in-game cruise
-- `heat-chase (harborline).mp3` — heat ≥ 2
-- `mission-win (harborline).mp3` / `mission-fail (harborline).mp3` — stings
+Drop-in folder: [`public/audio/`](/Users/danielkirkpatrick/GAMES/NOT_GTA_1/public/audio/)  
+Prompts: [`docs/SUNO-INSTRUMENTAL-PROMPTS.md`](/Users/danielkirkpatrick/GAMES/NOT_GTA_1/docs/SUNO-INSTRUMENTAL-PROMPTS.md)
 
-Pause **ambience** volume controls the music beds.
+| Role | Exact filename |
+|---|---|
+| Title / menu | `title-theme (harborline).mp3` |
+| City cruise | `city-night (harborline).mp3` |
+| Heat / chase (heat ≥ 2) | `heat-chase (harborline).mp3` |
+| Mission win sting | `mission-win (harborline).mp3` |
+| Mission fail / bust sting | `mission-fail (harborline).mp3` |
+
+Pause **ambience** volume controls music beds; **sfx** covers synthesized action sounds (pickup, shoot, UI, engine, arrest, crash).
 
 ## Mission types (one each)
 

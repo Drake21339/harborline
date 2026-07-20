@@ -201,6 +201,24 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
   expect(distinct.has("ui")).toBe(true);
   expect(distinct.has("engine")).toBe(true);
 
+  // Suno drop-in contract: beds probe present when files are in public/audio/.
+  await page.waitForFunction(
+    () => {
+      const b = window.__HARBOR_TEST__?.musicBedsReady();
+      return Boolean(b?.title && b?.city && b?.heat);
+    },
+    null,
+    { timeout: 8_000 },
+  );
+  const beds = await page.evaluate(() => window.__HARBOR_TEST__?.musicBedsReady());
+  expect(beds?.title).toBe(true);
+  expect(beds?.city).toBe(true);
+  expect(beds?.heat).toBe(true);
+  expect(beds?.active === "city" || beds?.active === "synth" || beds?.active === "heat").toBe(true);
+
+  const titleAudio = await page.request.get("/audio/title-theme%20(harborline).mp3");
+  expect(titleAudio.ok()).toBe(true);
+
   const after = await page.evaluate(() => {
     const d = window.__GAME_DEBUG__;
     if (!d) throw new Error("missing __GAME_DEBUG__");

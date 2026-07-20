@@ -354,6 +354,7 @@ export class GameScene extends Phaser.Scene {
       if (impact && impact.damage > 0) {
         const intensity = Math.min(0.012, 0.003 + impact.damage * 0.00025);
         this.cameras.main.shake(120, intensity);
+        audioBus.playSfx("crash");
         if (impact.impactSpeed >= 55) {
           reportOffense(this.heat, "crash", now);
         }
@@ -1012,6 +1013,12 @@ export class GameScene extends Phaser.Scene {
         const body = this.player.body as Phaser.Physics.Arcade.Body;
         body.reset(p.x, p.y);
       },
+      musicBedsReady: () => ({
+        title: audioBus.bedFileReady("title"),
+        city: audioBus.bedFileReady("city"),
+        heat: audioBus.bedFileReady("heat"),
+        active: audioBus.activeBed,
+      }),
     };
   }
 }

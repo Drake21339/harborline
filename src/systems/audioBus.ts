@@ -1,7 +1,7 @@
 import { audioUrl, type MusicBed, type MusicSting } from "./audioTracks";
 
 /** Tiny Web Audio bus — unlocks only after a user gesture. */
-export type SfxKind = "pickup" | "shoot" | "ui" | "arrest" | "engine";
+export type SfxKind = "pickup" | "shoot" | "ui" | "arrest" | "engine" | "crash";
 
 export class AudioBus {
   private ctx: AudioContext | null = null;
@@ -27,6 +27,11 @@ export class AudioBus {
 
   get activeBed(): MusicBed | "synth" | null {
     return this.currentBed;
+  }
+
+  /** Which Suno beds probed successfully after unlock (empty until unlock). */
+  bedFileReady(bed: MusicBed): boolean {
+    return this.bedReady.get(bed) === true;
   }
 
   async unlock(): Promise<void> {
@@ -117,6 +122,11 @@ export class AudioBus {
       case "engine":
         this.tone(90, 0.1, "sawtooth");
         this.tone(130, 0.08, "triangle", 0.03);
+        break;
+      case "crash":
+        this.noiseBurst(0.08);
+        this.tone(70, 0.1, "sawtooth");
+        this.tone(45, 0.14, "square", 0.04);
         break;
       default:
         break;

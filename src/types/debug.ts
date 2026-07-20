@@ -26,6 +26,7 @@ export interface HarborTestHooks {
   signalDanger: () => void;
   sfxKinds: () => string[];
   moveNearPickup: () => void;
+  musicBedsReady: () => { title: boolean; city: boolean; heat: boolean; active: string | null };
 }
 
 declare global {
