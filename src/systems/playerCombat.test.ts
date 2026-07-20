@@ -25,6 +25,7 @@ describe("playerCombat", () => {
 
   it("ranged consumes ammo; melee is fallback when empty", () => {
     const s = createPlayerCombat(100);
+    s.weapons.ammo.pistol = 1;
     s.ammo = 1;
     expect(canFireRanged(s, 0)).toBe(true);
     consumeRangedShot(s, 0);

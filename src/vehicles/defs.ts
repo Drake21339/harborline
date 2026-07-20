@@ -10,7 +10,9 @@ export interface VehicleDef {
   id: VehicleArchetypeId;
   label: string;
   color: number;
+  /** Length along heading (px) — ~1.5–2 tiles. */
   width: number;
+  /** Width across lane (px) — ~one lane on a 2-lane road. */
   height: number;
   maxSpeed: number;
   accel: number;
@@ -30,8 +32,8 @@ export const VEHICLE_DEFS: Record<VehicleArchetypeId, VehicleDef> = {
     id: "compact",
     label: "Compact",
     color: 0x6ec6ff,
-    width: 28,
-    height: 16,
+    width: 48,
+    height: 24,
     maxSpeed: 220,
     accel: 260,
     reverse: 140,
@@ -47,8 +49,8 @@ export const VEHICLE_DEFS: Record<VehicleArchetypeId, VehicleDef> = {
     id: "sedan",
     label: "Sedan",
     color: 0xc8d0dc,
-    width: 34,
-    height: 16,
+    width: 56,
+    height: 26,
     maxSpeed: 240,
     accel: 240,
     reverse: 130,
@@ -64,8 +66,8 @@ export const VEHICLE_DEFS: Record<VehicleArchetypeId, VehicleDef> = {
     id: "sports",
     label: "Sports",
     color: 0xff5a5a,
-    width: 32,
-    height: 15,
+    width: 52,
+    height: 24,
     maxSpeed: 320,
     accel: 360,
     reverse: 150,
@@ -81,8 +83,8 @@ export const VEHICLE_DEFS: Record<VehicleArchetypeId, VehicleDef> = {
     id: "van",
     label: "Van",
     color: 0xd2a86a,
-    width: 38,
-    height: 20,
+    width: 62,
+    height: 30,
     maxSpeed: 190,
     accel: 180,
     reverse: 110,
@@ -98,8 +100,8 @@ export const VEHICLE_DEFS: Record<VehicleArchetypeId, VehicleDef> = {
     id: "taxi",
     label: "Harbor Cab",
     color: 0xf0c040,
-    width: 34,
-    height: 16,
+    width: 56,
+    height: 26,
     maxSpeed: 230,
     accel: 230,
     reverse: 130,
@@ -115,8 +117,8 @@ export const VEHICLE_DEFS: Record<VehicleArchetypeId, VehicleDef> = {
     id: "police",
     label: "Patrol",
     color: 0x3a5cff,
-    width: 34,
-    height: 16,
+    width: 56,
+    height: 26,
     maxSpeed: 270,
     accel: 280,
     reverse: 140,

@@ -1,7 +1,8 @@
 import type { CombatantState } from "./combatTypes";
-import { COMBAT } from "./combatTypes";
+import { COMBAT, syncAmmoMirror } from "./combatTypes";
+import { addAmmo, grantWeapon, type WeaponId } from "./weapons";
 
-export type PickupKind = "health" | "ammo" | "cash" | "repair";
+export type PickupKind = "health" | "ammo" | "cash" | "repair" | "weapon_smg" | "weapon_shotgun";
 
 export interface WalletState {
   cash: number;
@@ -35,10 +36,20 @@ export function applyPickupToPlayer(
   if (kind === "health") {
     combat.health = Math.min(combat.maxHealth, combat.health + amount);
   } else if (kind === "ammo") {
-    combat.ammo = Math.min(combat.maxAmmo, combat.ammo + amount);
+    const id = combat.weapons.active === "melee" ? "pistol" : combat.weapons.active;
+    addAmmo(combat.weapons, id as WeaponId, amount);
+    syncAmmoMirror(combat);
   } else if (kind === "cash") {
     wallet.cash += amount;
     wallet.score += amount;
+  } else if (kind === "weapon_smg") {
+    grantWeapon(combat.weapons, "smg", amount || 40);
+    combat.weapons.active = "smg";
+    syncAmmoMirror(combat);
+  } else if (kind === "weapon_shotgun") {
+    grantWeapon(combat.weapons, "shotgun", amount || 8);
+    combat.weapons.active = "shotgun";
+    syncAmmoMirror(combat);
   }
   return { vehicleRepair: kind === "repair" ? amount : 0 };
 }
@@ -71,6 +82,22 @@ export function defaultPlazaPickups(spawnX: number, spawnY: number): PickupRunti
     { id: "ammo1", kind: "ammo", x: spawnX + 70, y: spawnY - 55, amount: 12, respawnMs: 10000 },
     { id: "cash1", kind: "cash", x: spawnX - 70, y: spawnY + 55, amount: 50, respawnMs: 15000 },
     { id: "repair1", kind: "repair", x: spawnX + 55, y: spawnY + 70, amount: 40, respawnMs: 18000 },
+    {
+      id: "smg1",
+      kind: "weapon_smg",
+      x: spawnX + 110,
+      y: spawnY + 20,
+      amount: 40,
+      respawnMs: 45000,
+    },
+    {
+      id: "shot1",
+      kind: "weapon_shotgun",
+      x: spawnX - 110,
+      y: spawnY + 10,
+      amount: 8,
+      respawnMs: 45000,
+    },
   ];
   return defs.map((d) => ({ ...d, availableAt: 0, collected: false }));
 }
@@ -90,7 +117,11 @@ export function respawnAtSafehouse(combat: CombatantState, safeX: number, safeY:
   y: number;
 } {
   combat.health = combat.maxHealth;
-  combat.ammo = Math.max(combat.ammo, Math.floor(COMBAT.startAmmo / 2));
+  combat.weapons.ammo.pistol = Math.max(
+    combat.weapons.ammo.pistol,
+    Math.floor(COMBAT.startAmmo / 2),
+  );
+  syncAmmoMirror(combat);
   combat.iFrameUntil = 0;
   combat.flashUntil = 0;
   return { x: safeX, y: safeY };
