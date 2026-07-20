@@ -226,6 +226,7 @@ Met for playable Harborline sandbox on pinned defaults (title/seed/tile/city). N
 - One-paste: `docs/WALKAWAY-AFK-POLISH-PROMPT.md`
 - Slices P1–P5: `docs/GROK-POLISH-SLICE-PROMPTS.md`
 - Start at **P1** (mission depth) when Daniel runs the polish AFK.
+- **No art-director loop** in this pass (ADR-007). Deep artwork / top-down 3D AFK comes *after* systems polish DoD.
 
 ### Art direction pin (2026-07-20)
 

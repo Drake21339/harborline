@@ -22,5 +22,6 @@ Phaser flat primitives / painted tiles = **interim playable stand-in**. Do not t
 
 ## For agents
 
-- Polish AFK: deepen systems + interim readability; do **not** silently rip out Phaser for a full 3D engine mid-polish.
-- Top-down 3D migration = its own explicit track after polish (or when Daniel asks).
+- **Systems polish AFK first** (`docs/WALKAWAY-AFK-POLISH-PROMPT.md`): deepen gameplay/feel; evidence screenshots only — **no** art-director iterate-until-perfect loop (ADR-007).
+- **Artwork polish AFK later** (not written yet): in-depth visual / top-down 3D presentation pass after systems polish DoD — screenshot→iterate with an explicit budget.
+- Do **not** silently rip out Phaser for a full 3D engine during systems polish.

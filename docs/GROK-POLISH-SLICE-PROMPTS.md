@@ -6,7 +6,7 @@ Use with [`WALKAWAY-AFK-POLISH-PROMPT.md`](/Users/danielkirkpatrick/GAMES/NOT_GT
 
 **Rules for every slice:** implement only this slice · keep `npm run verify` green (or the slice’s stated subset, then full verify by P5) · log evidence in `AUTONOMOUS_BUILD_LOG.md` · **commit + push** (only if the AFK paste grants git) · **stop** unless AFK mode is active.
 
-**Hard rails:** clean-room original only · keep Phaser.CANVAS + window key-state input unless e2e re-proven · **keyboard-only playable** (mouse optional for aim/start) · no force-push · no amend of pushed commits · no git config changes · no empty commits · no fake “done” without command output.
+**Hard rails:** clean-room original only · keep Phaser.CANVAS + window key-state input unless e2e re-proven · **keyboard-only playable** (mouse optional for aim/start) · **no art-director loop** (ADR-007; evidence screenshots only) · no force-push · no amend of pushed commits · no git config changes · no empty commits · no fake “done” without command output · do not move tag `v0.1.0`.
 
 ---
 
