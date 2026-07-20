@@ -49,21 +49,21 @@ Fully playable **with or without a mouse** (keyboard-first).
 
 ## Systems
 
-- Seeded districts (Pier Ward, Midstack, Ridge Hollow, Freight Cut, Greenbelt) with collision
-- On-foot combat, pickups, safehouse
-- Six vehicles: compact, sedan, sports, van, Harbor Cab, Patrol
-- Pooled pedestrians + traffic with flee reactions
+- Seeded districts (Pier Ward, Midstack, Ridge Hollow, Freight Cut, Greenbelt) with collision + glanceable district silhouettes
+- On-foot combat (muzzle/melee/hit feedback), pickups, safehouse
+- Six vehicles: compact, sedan, sports, van, Harbor Cab, Patrol — arcade drive with world solid collision + impact damage
+- Pooled pedestrians + traffic (sidewalk/road bias, flee reactions, caps ~64/40)
 - Heat 0–5 with police pursuit / arrest / decay
-- Five mission types: courier, steal-deliver, escape-heat, multi-stop, destruction
-- HUD, minimap, Web Audio (after gesture), localStorage save
+- Five mission types, each startable in-world from plaza accept markers
+- HUD, cached minimap (M expand), Web Audio after gesture (pickup/shoot/ui/arrest/engine), localStorage save
 
 ## Mission types (one each)
 
-1. **Pier Packet** — timed courier
+1. **Pier Packet** — timed courier (intro near spawn)
 2. **Yellow Line** — steal Harbor Cab → drop
 3. **Cool Off** — raise heat, escape until clear
 4. **Harbor Hops** — multi-stop packages
-5. **Crate Crack** — destruction
+5. **Crate Crack** — destruction (auto-completes if target already gone)
 
 ## Versions
 
@@ -75,8 +75,8 @@ Historical builds are git tags — see [`docs/VERSIONS.md`](/Users/danielkirkpat
 
 ## Testing
 
-- Unit: RNG, worldgen, combat, vehicles, pickups, heat, missions, save validation
-- E2E: boot → start → move → intro mission → enter/drive/exit → civilians → pause/resume → screenshot
+- Unit: RNG, worldgen, combat, vehicles (incl. world collision), civilian tile bias, pickups, heat, missions (all five types), save validation
+- E2E: boot → title → start → move → intro + non-intro mission accepts → enter/drive/exit → civilians/caps → SFX kinds → pause/resume → refresh re-entry → screenshots
 
 ## Architecture
 

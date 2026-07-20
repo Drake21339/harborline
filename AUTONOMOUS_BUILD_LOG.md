@@ -315,6 +315,30 @@ npm run test:e2e → 1 passed ~2.0s (title+HUD screenshots + ≥4 SFX kinds)
 
 Performance, full verify, README truth, completion report.
 
+---
+
+## 2026-07-20 — Polish P5 Performance + verify (green) — systems-polish DoD
+
+- Minimap static road/water/park layer cached in RenderTexture (repaint only on expand toggle); markers still per-frame.
+- README controls/missions/systems aligned with polished code.
+- Full `npm run verify` green; e2e spine retained (boot/start/move/missions/vehicle/civilians/SFX/pause/refresh/screenshots).
+- Systems-polish Definition of Done met for P1–P5. Artwork / top-down 3D AFK remains a separate later track (ADR-007).
+
+### Verification (observed)
+
+```text
+npm run verify
+→ typecheck OK
+→ lint OK
+→ vitest: 39 passed (9 files)
+→ vite build OK (~1.72s)
+→ playwright: 1 passed ~2.0s (full smoke + polish proofs)
+```
+
+### Systems-polish DoD
+
+Met. Non-blocking remaining limits: Phaser flats still interim (no 3D engine), mission scripting still lightweight, FPS not profiled on low-end hardware, no licensed music/voice.
+
 ### Art direction pin (2026-07-20)
 
 - **Top-down 3D** is the presentation target (ADR-005 / `docs/ART-DIRECTION.md`).

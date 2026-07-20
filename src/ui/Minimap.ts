@@ -3,10 +3,16 @@ import type { GeneratedWorld } from "../world/types";
 import { Tile } from "../world/tileTypes";
 import { tileAt } from "../world/types";
 
+/**
+ * Minimap with a cached static road/water layer (paint once per expand mode)
+ * and cheap per-frame dynamic markers.
+ */
 export class Minimap {
   private readonly g: Phaser.GameObjects.Graphics;
   private readonly frame: Phaser.GameObjects.Rectangle;
+  private readonly base: Phaser.GameObjects.RenderTexture;
   private expanded = false;
+  private cachedExpanded: boolean | null = null;
   private readonly miniSize = 168;
   private readonly expandSize = 440;
 
@@ -20,6 +26,11 @@ export class Minimap {
       .setDepth(110)
       .setOrigin(1, 0)
       .setStrokeStyle(1, 0x7dffa8, 0.35);
+    this.base = scene.add
+      .renderTexture(0, 0, this.expandSize, this.expandSize)
+      .setScrollFactor(0)
+      .setDepth(110.5)
+      .setOrigin(0, 0);
     this.g = scene.add.graphics().setScrollFactor(0).setDepth(111);
     this.layout(scene.scale.width);
   }
@@ -52,32 +63,19 @@ export class Minimap {
     this.layout(viewW);
     const left = viewW - 12 - size;
     const top = 14;
-    this.g.clear();
-    this.g.fillStyle(0x121c2a, 0.92);
-    this.g.fillRect(left, top, size, size);
 
+    if (this.cachedExpanded !== this.expanded) {
+      this.repaintBase(size);
+      this.cachedExpanded = this.expanded;
+    }
+
+    this.base.setPosition(left, top);
+    this.base.setDisplaySize(size, size);
+    this.base.setVisible(true);
+
+    this.g.clear();
     const worldPx = this.world.width * this.world.tileSize;
     const scale = size / worldPx;
-    const step = this.expanded ? 2 : 3;
-
-    // Water / parks for district read, then roads on top.
-    for (let ty = 0; ty < this.world.height; ty += step) {
-      for (let tx = 0; tx < this.world.width; tx += step) {
-        const t = tileAt(this.world, tx, ty);
-        const x = left + tx * this.world.tileSize * scale;
-        const y = top + ty * this.world.tileSize * scale;
-        if (t === Tile.Water) {
-          this.g.fillStyle(0x2a4a6a, 1);
-          this.g.fillRect(x, y, 2, 2);
-        } else if (t === Tile.Park || t === Tile.Grass) {
-          this.g.fillStyle(0x2f5a36, 0.7);
-          this.g.fillRect(x, y, 2, 2);
-        } else if (t === Tile.Road) {
-          this.g.fillStyle(0x6a7080, 1);
-          this.g.fillRect(x, y, 2.5, 2.5);
-        }
-      }
-    }
 
     for (const m of markers) {
       this.g.fillStyle(0x7dffa8, 1);
@@ -101,5 +99,38 @@ export class Minimap {
       px + Math.cos(facing - 2.4) * 6,
       py + Math.sin(facing - 2.4) * 6,
     );
+  }
+
+  private repaintBase(size: number): void {
+    const g = this.base.scene.make.graphics({ x: 0, y: 0 }, false);
+    g.fillStyle(0x121c2a, 0.92);
+    g.fillRect(0, 0, size, size);
+
+    const worldPx = this.world.width * this.world.tileSize;
+    const scale = size / worldPx;
+    const step = this.expanded ? 2 : 3;
+
+    for (let ty = 0; ty < this.world.height; ty += step) {
+      for (let tx = 0; tx < this.world.width; tx += step) {
+        const t = tileAt(this.world, tx, ty);
+        const x = tx * this.world.tileSize * scale;
+        const y = ty * this.world.tileSize * scale;
+        if (t === Tile.Water) {
+          g.fillStyle(0x2a4a6a, 1);
+          g.fillRect(x, y, 2, 2);
+        } else if (t === Tile.Park || t === Tile.Grass) {
+          g.fillStyle(0x2f5a36, 0.7);
+          g.fillRect(x, y, 2, 2);
+        } else if (t === Tile.Road) {
+          g.fillStyle(0x6a7080, 1);
+          g.fillRect(x, y, 2.5, 2.5);
+        }
+      }
+    }
+
+    this.base.clear();
+    this.base.resize(size, size);
+    this.base.draw(g, 0, 0);
+    g.destroy();
   }
 }
