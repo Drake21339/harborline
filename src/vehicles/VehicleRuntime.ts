@@ -120,6 +120,30 @@ export class VehicleRuntime {
     this.syncView(active, false);
   }
 
+  repairActive(amount: number): void {
+    const active = this.active;
+    if (!active || active.state.destroyed) return;
+    active.state.health = Math.min(active.state.maxHealth, active.state.health + amount);
+    this.syncView(active, false);
+  }
+
+  repairNearest(x: number, y: number, amount: number, maxDist = 70): boolean {
+    let best: RuntimeVehicle | null = null;
+    let bestD = maxDist;
+    for (const v of this.vehicles) {
+      if (v.state.destroyed) continue;
+      const d = Math.hypot(v.state.x - x, v.state.y - y);
+      if (d < bestD) {
+        bestD = d;
+        best = v;
+      }
+    }
+    if (!best) return false;
+    best.state.health = Math.min(best.state.maxHealth, best.state.health + amount);
+    this.syncView(best, false);
+    return true;
+  }
+
   private syncView(v: RuntimeVehicle, braking: boolean): void {
     const stage = damageStage(v.state.health, v.state.maxHealth);
     v.view.setPosition(v.state.x, v.state.y);

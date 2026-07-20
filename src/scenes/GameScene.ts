@@ -13,6 +13,8 @@ import {
 } from "../systems/playerCombat";
 import type { CombatantState } from "../systems/combatTypes";
 import { CivilianRuntime } from "../systems/CivilianRuntime";
+import { PickupRuntime } from "../systems/PickupRuntime";
+import { createWallet, isAtSafehouse, respawnAtSafehouse, type WalletState } from "../systems/pickups";
 import { VehicleRuntime } from "../vehicles/VehicleRuntime";
 import { generateWorld } from "../world/generateWorld";
 import { createCollisionBodies, paintWorldTexture } from "../world/renderWorld";
@@ -31,6 +33,9 @@ export class GameScene extends Phaser.Scene {
   private combat!: CombatantState;
   private vehicles!: VehicleRuntime;
   private civilians!: CivilianRuntime;
+  private pickups!: PickupRuntime;
+  private wallet!: WalletState;
+  private safehouse = { x: 0, y: 0 };
   private readonly keysDown = new Set<string>();
   private removeKeyListeners: (() => void) | null = null;
   private districtToast!: Phaser.GameObjects.Text;
@@ -72,6 +77,21 @@ export class GameScene extends Phaser.Scene {
     this.vehicles = new VehicleRuntime(this, this.world);
     this.vehicles.spawnFleet(spawnX, spawnY);
     this.civilians = new CivilianRuntime(this, this.world);
+    this.wallet = createWallet();
+    this.pickups = new PickupRuntime(this, spawnX, spawnY);
+    // Safehouse: Midstack plaza west pad.
+    this.safehouse = { x: spawnX - 90, y: spawnY - 10 };
+    this.add
+      .rectangle(this.safehouse.x, this.safehouse.y, 40, 40, 0x7dffa8, 0.25)
+      .setDepth(3);
+    this.add
+      .text(this.safehouse.x, this.safehouse.y - 28, "SAFEHOUSE", {
+        fontFamily: "monospace",
+        fontSize: "11px",
+        color: COLORS.accent,
+      })
+      .setOrigin(0.5)
+      .setDepth(12);
 
     this.aimLine = this.add
       .rectangle(spawnX, spawnY, 22, 4, 0xffffff, 0.85)
@@ -114,7 +134,7 @@ export class GameScene extends Phaser.Scene {
       if (key === "e") {
         this.toggleVehicle();
       }
-      if (key === "r" && this.combat.health <= 0) {
+      if (key === "r") {
         this.respawnStub();
       }
     };
@@ -288,6 +308,17 @@ export class GameScene extends Phaser.Scene {
 
     this.updateProjectiles();
     this.civilians.update(now, this.player.x, this.player.y, dt);
+    this.pickups.update(
+      now,
+      this.player.x,
+      this.player.y,
+      this.combat,
+      this.wallet,
+      (amount) => {
+        if (this.vehicles.activeId) this.vehicles.repairActive(amount);
+        else this.vehicles.repairNearest(this.player.x, this.player.y, amount);
+      },
+    );
 
     const tileX = Math.floor(this.player.x / this.world.tileSize);
     const tileY = Math.floor(this.player.y / this.world.tileSize);
@@ -307,10 +338,13 @@ export class GameScene extends Phaser.Scene {
         }`,
       );
     } else if (this.combat.health <= 0) {
-      this.hudText.setText("DOWN — press R to respawn (stub)");
+      this.hudText.setText("DOWN — press R for safehouse respawn");
     } else {
+      const safe = isAtSafehouse(this.player.x, this.player.y, this.safehouse.x, this.safehouse.y)
+        ? " · SAFEHOUSE"
+        : "";
       this.hudText.setText(
-        `HP ${Math.ceil(this.combat.health)}/${this.combat.maxHealth} · Ammo ${this.combat.ammo}`,
+        `HP ${Math.ceil(this.combat.health)}/${this.combat.maxHealth} · Ammo ${this.combat.ammo} · $${this.wallet.cash}${safe}`,
       );
     }
     this.publishDebug();
@@ -426,10 +460,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   private respawnStub(): void {
-    this.combat = createPlayerCombat(PLAYER.maxHealth);
-    this.player.setPosition(this.world.spawn.pixelX, this.world.spawn.pixelY);
+    if (this.vehicles.activeId) {
+      this.vehicles.tryExit();
+    }
+    const pos = respawnAtSafehouse(this.combat, this.safehouse.x, this.safehouse.y);
+    this.player.setPosition(pos.x, pos.y);
     this.player.setFillStyle(COLORS.player);
     this.player.setVisible(true);
+    this.aimLine.setVisible(true);
+    this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
   }
 
   private showDistrictToast(name: string, id: string): void {

@@ -116,3 +116,23 @@ npm run test:e2e → 1 passed (incl. civilian counts) ~1.1s
 ### Next slice (Build Order #6)
 
 Pickups, repair, safehouse/respawn, resource refresh.
+
+---
+
+## 2026-07-20 — Slice 6 Pickups (green)
+
+- Plaza pickups: health/ammo/cash/repair with respawn timers + collect feedback.
+- Safehouse marker; R respawns there with restored HP/ammo; repair heals nearest/active vehicle.
+- Unit tests for apply/collect/respawn.
+
+### Verification (observed)
+
+```text
+npm run check → OK
+npm run test → 16 passed (incl. 3 pickups)
+npm run test:e2e → 1 passed ~1.1s
+```
+
+### Next slice (Build Order #7)
+
+Heat 0–5, police pursuit, arrest, decay.
