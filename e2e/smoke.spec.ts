@@ -106,6 +106,11 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
   expect(after.inVehicle).toBe(false);
   expect(after.missionId).toBe("intro-courier");
 
+  // Pause / resume + audio unlock via gesture already done on canvas click/Enter.
+  await page.keyboard.press("p");
+  await page.waitForTimeout(100);
+  await page.keyboard.press("p");
+
   await page.screenshot({ path: "test-results/harborline-vehicle-smoke.png", fullPage: true });
   expect(pageErrors, `page errors: ${pageErrors.join(" | ")}`).toEqual([]);
   expect(consoleErrors, `console errors: ${consoleErrors.join(" | ")}`).toEqual([]);

@@ -38,6 +38,10 @@ export class PoliceRuntime {
     return this.units.filter((u) => u.active).length;
   }
 
+  get positions(): Array<{ x: number; y: number }> {
+    return this.units.filter((u) => u.active).map((u) => ({ x: u.x, y: u.y }));
+  }
+
   get isPlayerSeen(): boolean {
     return this.seenPlayer;
   }

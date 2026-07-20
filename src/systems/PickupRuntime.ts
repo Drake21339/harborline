@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { audioBus } from "./audioBus";
 import type { CombatantState } from "./combatTypes";
 import {
   applyPickupToPlayer,
@@ -55,6 +56,7 @@ export class PickupRuntime {
       if (tryCollectPickup(p, now, playerX, playerY, 22)) {
         const result = applyPickupToPlayer(p.kind, p.amount, combat, wallet);
         if (result.vehicleRepair > 0) onRepair(result.vehicleRepair);
+        audioBus.playSfx("pickup");
         this.pulseFeedback(p.kind);
         view.setVisible(false);
       }

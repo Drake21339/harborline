@@ -176,3 +176,23 @@ npm run test:e2e → 1 passed (mission + vehicle) ~1.4s
 ### Next slice (Build Order #9)
 
 HUD/minimap, Web Audio, localStorage persistence.
+
+---
+
+## 2026-07-20 — Slice 9 HUD/Audio/Save (green)
+
+- Pause (P/Esc) with master/SFX/ambience controls + reset save; Help (F1/H).
+- Minimap + M expand; Web Audio unlocks after gesture; localStorage save validation.
+- e2e pause/resume; save unit tests.
+
+### Verification (observed)
+
+```text
+npm run check → OK
+npm run test → 26 passed (incl. 2 save)
+npm run test:e2e → 1 passed (pause/resume included) ~1.5s
+```
+
+### Next slice (Build Order #10)
+
+Harden e2e spine, README, full verify, completion report.

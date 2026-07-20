@@ -23,7 +23,10 @@ import {
 } from "../systems/heat";
 import { PickupRuntime } from "../systems/PickupRuntime";
 import { PoliceRuntime } from "../systems/PoliceRuntime";
+import { audioBus } from "../systems/audioBus";
 import { createWallet, isAtSafehouse, respawnAtSafehouse, type WalletState } from "../systems/pickups";
+import { loadSave, resetSave, writeSave, type SaveData } from "../systems/save";
+import { Minimap } from "../ui/Minimap";
 import { VehicleRuntime } from "../vehicles/VehicleRuntime";
 import { generateWorld } from "../world/generateWorld";
 import { createCollisionBodies, paintWorldTexture } from "../world/renderWorld";
@@ -50,6 +53,12 @@ export class GameScene extends Phaser.Scene {
   private safehouse = { x: 0, y: 0 };
   private heatHud!: Phaser.GameObjects.Text;
   private reportedWreckIds = new Set<string>();
+  private minimap!: Minimap;
+  private save!: SaveData;
+  private paused = false;
+  private helpOpen = false;
+  private pausePanel!: Phaser.GameObjects.Container;
+  private helpPanel!: Phaser.GameObjects.Container;
   private readonly keysDown = new Set<string>();
   private removeKeyListeners: (() => void) | null = null;
   private districtToast!: Phaser.GameObjects.Text;
@@ -69,6 +78,8 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     this.world = generateWorld(WORLD_SEED);
     this.combat = createPlayerCombat(PLAYER.maxHealth);
+    this.save = loadSave();
+    audioBus.setVolumes(this.save.masterVolume, this.save.sfxVolume, this.save.ambienceVolume);
     const worldPixels = this.world.width * this.world.tileSize;
 
     this.cameras.main.setBackgroundColor(COLORS.sky);
@@ -94,8 +105,11 @@ export class GameScene extends Phaser.Scene {
     this.police = new PoliceRuntime(this);
     this.heat = createHeatState();
     this.wallet = createWallet();
+    this.wallet.cash = this.save.cash;
+    this.wallet.score = this.save.score;
     this.pickups = new PickupRuntime(this, spawnX, spawnY);
     this.missions = new MissionRuntime(this, spawnX, spawnY);
+    this.minimap = new Minimap(this, this.world);
     // Safehouse: Midstack plaza west pad.
     this.safehouse = { x: spawnX - 90, y: spawnY - 10 };
     this.add
@@ -142,9 +156,48 @@ export class GameScene extends Phaser.Scene {
     const onKeyDown = (event: KeyboardEvent): void => {
       const key = event.key.toLowerCase();
       this.keysDown.add(key);
-      if (event.key === "Escape") {
-        this.scene.start("TitleScene");
+      void audioBus.unlock();
+
+      if (key === "p" || event.key === "Escape") {
+        if (this.helpOpen) {
+          this.setHelp(false);
+          return;
+        }
+        this.setPaused(!this.paused);
+        return;
       }
+      if (key === "f1" || key === "h") {
+        this.setHelp(!this.helpOpen);
+        return;
+      }
+      if (key === "m") {
+        this.minimap.toggleExpanded();
+        return;
+      }
+      if (this.paused || this.helpOpen) {
+        if (this.paused && key === "[") {
+          this.adjustVolume("master", -0.1);
+        } else if (this.paused && key === "]") {
+          this.adjustVolume("master", 0.1);
+        } else if (this.paused && key === ";") {
+          this.adjustVolume("sfx", -0.1);
+        } else if (this.paused && key === "'") {
+          this.adjustVolume("sfx", 0.1);
+        } else if (this.paused && key === ",") {
+          this.adjustVolume("ambience", -0.1);
+        } else if (this.paused && key === ".") {
+          this.adjustVolume("ambience", 0.1);
+        } else if (this.paused && key === "x") {
+          this.save = resetSave();
+          this.wallet.cash = 0;
+          this.wallet.score = 0;
+          audioBus.setVolumes(this.save.masterVolume, this.save.sfxVolume, this.save.ambienceVolume);
+          this.refreshPauseText();
+          audioBus.playSfx("ui");
+        }
+        return;
+      }
+
       if (key === "f" && !this.vehicles.activeId) {
         this.tryAttack();
       }
@@ -153,7 +206,7 @@ export class GameScene extends Phaser.Scene {
           !this.vehicles.activeId &&
           this.missions.tryAcceptIntro(this.player.x, this.player.y, this.time.now)
         ) {
-          // Mission accept consumes E when near intro marker.
+          audioBus.playSfx("ui");
         } else {
           this.toggleVehicle();
         }
@@ -173,6 +226,8 @@ export class GameScene extends Phaser.Scene {
     };
 
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
+      void audioBus.unlock();
+      if (this.paused || this.helpOpen) return;
       if (p.leftButtonDown()) {
         this.pointerDown = true;
         if (!this.vehicles.activeId) this.tryAttack();
@@ -193,7 +248,7 @@ export class GameScene extends Phaser.Scene {
       .text(
         12,
         12,
-        "WASD · Shift sprint · E enter/exit · Mouse aim · LMB/F fire · Space handbrake · Esc title",
+        "WASD · E interact · LMB/F fire · Space brake · M map · P/Esc pause · F1/H help",
         {
           fontFamily: "monospace",
           fontSize: "13px",
@@ -204,6 +259,8 @@ export class GameScene extends Phaser.Scene {
       )
       .setScrollFactor(0)
       .setDepth(100);
+
+    this.buildPauseAndHelp();
 
     this.hudText = this.add
       .text(12, 40, "", {
@@ -254,6 +311,12 @@ export class GameScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     const now = this.time.now;
+    if (this.paused || this.helpOpen) {
+      const body = this.player.body as Phaser.Physics.Arcade.Body;
+      body.setVelocity(0, 0);
+      this.publishDebug();
+      return;
+    }
     const dt = Math.min(0.05, delta / 1000);
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     const inVehicle = Boolean(this.vehicles.activeId);
@@ -424,7 +487,109 @@ export class GameScene extends Phaser.Scene {
           }`
         : "HEAT ○○○○○",
     );
+
+    const activeMission = this.missions.manager.active;
+    const markers =
+      activeMission && activeMission.status === "active"
+        ? activeMission.def.markers.map((m) => ({ x: m.x, y: m.y }))
+        : [];
+    this.minimap.draw(
+      this.scale.width,
+      this.player.x,
+      this.player.y,
+      this.combat.facing,
+      this.police.positions,
+      markers,
+    );
+
+    // Persist lightly.
+    this.save.cash = this.wallet.cash;
+    this.save.score = this.wallet.score;
+    if (Math.floor(now / 2000) !== Math.floor((now - dt * 1000) / 2000)) {
+      writeSave(this.save);
+    }
+
     this.publishDebug();
+  }
+
+  private buildPauseAndHelp(): void {
+    const mkPanel = (lines: string[]): Phaser.GameObjects.Container => {
+      const bg = this.add
+        .rectangle(GAME_WIDTH / 2, 360, 640, 420, 0x0b1220, 0.92)
+        .setScrollFactor(0);
+      const text = this.add
+        .text(GAME_WIDTH / 2, 360, lines.join("\n"), {
+          fontFamily: "monospace",
+          fontSize: "16px",
+          color: COLORS.uiText,
+          align: "center",
+        })
+        .setOrigin(0.5)
+        .setScrollFactor(0);
+      return this.add.container(0, 0, [bg, text]).setDepth(200).setScrollFactor(0).setVisible(false);
+    };
+
+    this.pausePanel = mkPanel([""]);
+    this.helpPanel = mkPanel([
+      "HELP / CONTROLS",
+      "",
+      "WASD / Arrows — move or drive",
+      "Shift — sprint   Space — handbrake",
+      "E — enter/exit / accept mission",
+      "Mouse + LMB/F — aim & fire",
+      "M — expand map   R — safehouse respawn",
+      "P / Esc — pause   F1 / H — help",
+      "",
+      "P/Esc again resumes",
+    ]);
+    this.refreshPauseText();
+  }
+
+  private refreshPauseText(): void {
+    const text = this.pausePanel.list[1] as Phaser.GameObjects.Text;
+    text.setText(
+      [
+        "PAUSED",
+        "",
+        `[ ] master ${this.save.masterVolume.toFixed(1)}`,
+        `; ' sfx ${this.save.sfxVolume.toFixed(1)}`,
+        `, . ambience ${this.save.ambienceVolume.toFixed(1)}`,
+        "",
+        "X — reset save",
+        "P / Esc — resume",
+      ].join("\n"),
+    );
+  }
+
+  private setPaused(on: boolean): void {
+    this.paused = on;
+    if (on) this.helpOpen = false;
+    this.pausePanel.setVisible(on);
+    this.helpPanel.setVisible(false);
+    this.refreshPauseText();
+    audioBus.playSfx("ui");
+  }
+
+  private setHelp(on: boolean): void {
+    this.helpOpen = on;
+    if (on) this.paused = false;
+    this.helpPanel.setVisible(on);
+    this.pausePanel.setVisible(false);
+    audioBus.playSfx("ui");
+  }
+
+  private adjustVolume(bus: "master" | "sfx" | "ambience", delta: number): void {
+    if (bus === "master") {
+      this.save.masterVolume = Math.max(0, Math.min(1, this.save.masterVolume + delta));
+    } else if (bus === "sfx") {
+      this.save.sfxVolume = Math.max(0, Math.min(1, this.save.sfxVolume + delta));
+    } else {
+      this.save.ambienceVolume = Math.max(0, Math.min(1, this.save.ambienceVolume + delta));
+    }
+    audioBus.setVolumes(this.save.masterVolume, this.save.sfxVolume, this.save.ambienceVolume);
+    writeSave(this.save);
+    this.refreshPauseText();
+    audioBus.playSfx("ui");
   }
 
   private toggleVehicle(): void {
@@ -461,6 +626,8 @@ export class GameScene extends Phaser.Scene {
     this.player.setVisible(true);
     this.aimLine.setVisible(true);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+    audioBus.playSfx("arrest");
+    writeSave({ ...this.save, cash: this.wallet.cash, score: this.wallet.score });
   }
 
   private tryAttack(): void {
@@ -470,6 +637,7 @@ export class GameScene extends Phaser.Scene {
     if (canFireRanged(this.combat, now)) {
       consumeRangedShot(this.combat, now);
       this.spawnProjectile();
+      audioBus.playSfx("shoot");
       this.civilians.signalDanger(this.player.x, this.player.y, now);
       reportOffense(this.heat, "attack", now);
       return;

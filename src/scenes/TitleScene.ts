@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { COLORS, GAME_TITLE } from "../config/gameConfig";
+import { audioBus } from "../systems/audioBus";
 import { patchDebugSnapshot } from "../systems/debugSnapshot";
 
 export class TitleScene extends Phaser.Scene {
@@ -59,6 +60,7 @@ export class TitleScene extends Phaser.Scene {
     });
 
     const start = (): void => {
+      void audioBus.unlock();
       this.scene.start("GameScene");
     };
 
