@@ -27,4 +27,5 @@ Not the hard term: “2.5D” (too ambiguous). Casual nickname only.
 
 - Do **not** treat flat interim art as the forever end state (ADR-005 / ADR-009).
 - Prefer mesh/material/lighting iteration over painting more 2D faux roofs.
+- **Graphics beauty AFK** (art-only on the Three.js layer): `docs/WALKAWAY-AFK-GRAPHICS-BEAUTY-PROMPT.md` + `docs/GROK-GRAPHICS-BEAUTY-SLICES.md`.
 - Suno instrumentals: `docs/SUNO-INSTRUMENTAL-PROMPTS.md` → drop files in `public/audio/`.
