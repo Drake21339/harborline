@@ -4,6 +4,7 @@ import { Tile } from "../world/tileTypes";
 import type { GeneratedWorld } from "../world/types";
 import { tileAt } from "../world/types";
 import { CIVILIAN, CIVILIAN_CAPS } from "./civilianConfig";
+import { biasedCivilianStep } from "./civilianMove";
 
 interface Agent {
   view: Phaser.GameObjects.Rectangle;
@@ -22,6 +23,13 @@ export class CivilianRuntime {
   private readonly roadCells: Array<{ x: number; y: number }> = [];
   private readonly walkCells: Array<{ x: number; y: number }> = [];
   private sirenUntil = 0;
+  /** Rolling counters for tile-bias proof (debug / tests). */
+  readonly bias = {
+    pedPreferred: 0,
+    pedTotal: 0,
+    carPreferred: 0,
+    carTotal: 0,
+  };
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -80,26 +88,35 @@ export class CivilianRuntime {
     }
     const fleeing = now < a.fleeingUntil;
     const speed = fleeing ? flee : walk;
-    if (!fleeing && this.rng.next() < 0.01) {
-      a.heading += (this.rng.next() - 0.5) * 1.2;
-    }
-    a.x += Math.cos(a.heading) * speed * dtSec;
-    a.y += Math.sin(a.heading) * speed * dtSec;
+    const jitter = !fleeing && this.rng.next() < 0.01 ? (this.rng.next() - 0.5) * 1.2 : 0;
+
+    const stepped = biasedCivilianStep({
+      x: a.x,
+      y: a.y,
+      heading: a.heading,
+      speed,
+      dtSec,
+      tileSize: this.world.tileSize,
+      kind: a.kind,
+      fleeing,
+      jitter,
+      sampleTile: (tx, ty) => tileAt(this.world, tx, ty),
+    });
+
+    a.x = stepped.x;
+    a.y = stepped.y;
+    a.heading = stepped.heading;
 
     const max = this.world.width * this.world.tileSize - 4;
     a.x = Math.max(4, Math.min(max, a.x));
     a.y = Math.max(4, Math.min(max, a.y));
 
-    // Soft avoid solids by bouncing heading.
-    const t = tileAt(
-      this.world,
-      Math.floor(a.x / this.world.tileSize),
-      Math.floor(a.y / this.world.tileSize),
-    );
-    if (t === Tile.Building || t === Tile.Water || t === Tile.Fence) {
-      a.heading += Math.PI * 0.6;
-      a.x += Math.cos(a.heading) * 10;
-      a.y += Math.sin(a.heading) * 10;
+    if (a.kind === "ped") {
+      this.bias.pedTotal += 1;
+      if (stepped.preferred) this.bias.pedPreferred += 1;
+    } else {
+      this.bias.carTotal += 1;
+      if (stepped.preferred) this.bias.carPreferred += 1;
     }
 
     a.view.setPosition(a.x, a.y);

@@ -249,6 +249,27 @@ npm run test:e2e → 1 passed ~1.4s (intro + 2 non-intro accepts + vehicle + pau
 
 Living city feel: AI tile bias + district visual read.
 
+---
+
+## 2026-07-20 — Polish P2 Living city feel (green)
+
+- Ped/traffic movement uses tile bias (sidewalk/plaza/park/grass vs road); unit helper proves >70% preferred steps.
+- District paint strengthened: distinct ground tints + building roof/face/trim silhouettes (interim faux height).
+- Caps still enforced; flee tint path still trips via danger signal; `__GAME_DEBUG__.civBias` counters published.
+- Evidence screenshot: `test-results/districts-read.png` (zoomed Midstack vantage, ≥3 district palettes readable).
+
+### Verification (observed)
+
+```text
+npm run check → typecheck OK, lint OK
+npm run test → 37 passed (incl. 4 civilianMove)
+npm run test:e2e → 1 passed ~1.6s (caps + district screenshot)
+```
+
+### Next slice (Polish P3)
+
+Drive/combat juice: vehicle↔world collision + feedback.
+
 ### Art direction pin (2026-07-20)
 
 - **Top-down 3D** is the presentation target (ADR-005 / `docs/ART-DIRECTION.md`).

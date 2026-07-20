@@ -126,6 +126,34 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
     { timeout: 8_000 },
   );
 
+  // Caps still enforced; tile-bias counters accumulate; flee tint path still trips.
+  const civ = await page.evaluate(() => {
+    const d = window.__GAME_DEBUG__;
+    const t = window.__HARBOR_TEST__;
+    if (!d || !t) throw new Error("missing debug");
+    t.signalDanger();
+    return {
+      peds: d.counts.pedestrians,
+      cars: d.counts.traffic,
+      pedBias: d.civBias?.pedTotal ? d.civBias.pedPreferred / d.civBias.pedTotal : 0,
+      carBias: d.civBias?.carTotal ? d.civBias.carPreferred / d.civBias.carTotal : 0,
+    };
+  });
+  expect(civ.peds).toBeLessThanOrEqual(80);
+  expect(civ.peds).toBeGreaterThanOrEqual(1);
+  expect(civ.cars).toBeLessThanOrEqual(50);
+  expect(civ.cars).toBeGreaterThanOrEqual(1);
+
+  // District glance evidence (zoomed-out Midstack vantage shows ≥3 district palettes).
+  await page.evaluate(() => {
+    window.__HARBOR_TEST__?.setZoom(0.28);
+  });
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: "test-results/districts-read.png", fullPage: true });
+  await page.evaluate(() => {
+    window.__HARBOR_TEST__?.setZoom(1);
+  });
+
   const after = await page.evaluate(() => {
     const d = window.__GAME_DEBUG__;
     if (!d) throw new Error("missing __GAME_DEBUG__");

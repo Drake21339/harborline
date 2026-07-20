@@ -806,6 +806,12 @@ export class GameScene extends Phaser.Scene {
         police: this.police.activeCount,
       },
       fps: Math.round(this.game.loop.actualFps),
+      civBias: {
+        pedPreferred: this.civilians.bias.pedPreferred,
+        pedTotal: this.civilians.bias.pedTotal,
+        carPreferred: this.civilians.bias.carPreferred,
+        carTotal: this.civilians.bias.carTotal,
+      },
     });
   }
 
@@ -848,6 +854,12 @@ export class GameScene extends Phaser.Scene {
         this.player.setPosition(x, y);
         const body = this.player.body as Phaser.Physics.Arcade.Body;
         body.reset(x, y);
+      },
+      setZoom: (z: number) => {
+        this.cameras.main.setZoom(z);
+      },
+      signalDanger: () => {
+        this.civilians.signalDanger(this.player.x, this.player.y, this.time.now);
       },
     };
   }

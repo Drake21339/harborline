@@ -9,6 +9,8 @@ declare global {
       acceptNearby: () => boolean;
       acceptPoint: (missionId: string) => { x: number; y: number } | null;
       moveNearFleet: () => void;
+      setZoom: (z: number) => void;
+      signalDanger: () => void;
     };
   }
 }

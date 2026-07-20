@@ -14,14 +14,24 @@ const TILE_COLORS: Record<number, number> = {
   [Tile.Plaza]: 0x4a4a52,
 };
 
+/** Per-district building facade + roof-edge cues (interim faux height). */
+const DISTRICT_BUILDING: Record<string, { face: number; roof: number; trim: number }> = {
+  "pier-ward": { face: 0x4a6478, roof: 0x2a3848, trim: 0x8ab0c8 },
+  midstack: { face: 0x6a6558, roof: 0x3a3830, trim: 0xc4b898 },
+  "ridge-hollow": { face: 0x7a6a52, roof: 0x4a3a28, trim: 0xd0b070 },
+  "freight-cut": { face: 0x7a5538, roof: 0x3a2818, trim: 0xe0a060 },
+  greenbelt: { face: 0x4a6a42, roof: 0x243828, trim: 0x90c878 },
+};
+
 /**
  * Paint the city once into a RenderTexture (one draw call at runtime).
- * District ground tint modulates grass/park underlays slightly.
+ * District ground tint + building silhouettes for glanceable identity.
  */
 export function paintWorldTexture(scene: Phaser.Scene, world: GeneratedWorld): Phaser.GameObjects.Image {
   const key = `world-${world.seed}-${world.fingerprint}`;
   const w = world.width * world.tileSize;
   const h = world.height * world.tileSize;
+  const ts = world.tileSize;
 
   if (scene.textures.exists(key)) {
     scene.textures.remove(key);
@@ -33,24 +43,48 @@ export function paintWorldTexture(scene: Phaser.Scene, world: GeneratedWorld): P
   for (let ty = 0; ty < world.height; ty += 1) {
     for (let tx = 0; tx < world.width; tx += 1) {
       const tile = world.tiles[ty * world.width + tx]!;
+      const d = districtAt(world, tx, ty);
       let color = TILE_COLORS[tile] ?? 0x222222;
+      const px = tx * ts;
+      const py = ty * ts;
+
       if (tile === Tile.Grass || tile === Tile.Park) {
-        const d = districtAt(world, tx, ty);
-        if (d) {
-          // Soft blend toward district ground color.
-          color = blend(color, d.groundColor, 0.35);
-        }
+        if (d) color = blend(color, d.groundColor, 0.55);
+        g.fillStyle(color, 1);
+        g.fillRect(px, py, ts, ts);
+        continue;
       }
-      // Building facade variation by district.
+
+      if (tile === Tile.Sidewalk || tile === Tile.Plaza) {
+        if (d) color = blend(color, d.groundColor, 0.28);
+        g.fillStyle(color, 1);
+        g.fillRect(px, py, ts, ts);
+        continue;
+      }
+
       if (tile === Tile.Building) {
-        const d = districtAt(world, tx, ty);
-        if (d?.id === "pier-ward") color = 0x4a5a68;
-        else if (d?.id === "freight-cut") color = 0x6a5038;
-        else if (d?.id === "ridge-hollow") color = 0x6a5a4a;
-        else if (d?.id === "greenbelt") color = 0x4a5a3a;
+        const style = (d && DISTRICT_BUILDING[d.id]) || {
+          face: 0x5a4a3a,
+          roof: 0x2a2218,
+          trim: 0xa09070,
+        };
+        // Faux top-down 3D: dark roof band north, lit facade south, trim east edge.
+        g.fillStyle(style.roof, 1);
+        g.fillRect(px, py, ts, 7);
+        g.fillStyle(style.face, 1);
+        g.fillRect(px, py + 7, ts, ts - 7);
+        g.fillStyle(style.trim, 0.55);
+        g.fillRect(px + ts - 4, py + 8, 3, ts - 10);
+        // Speckle for facade variety (deterministic from coords).
+        if ((tx * 17 + ty * 31) % 5 === 0) {
+          g.fillStyle(blend(style.face, 0xffffff, 0.12), 1);
+          g.fillRect(px + 6, py + 12, 8, 6);
+        }
+        continue;
       }
+
       g.fillStyle(color, 1);
-      g.fillRect(tx * world.tileSize, ty * world.tileSize, world.tileSize, world.tileSize);
+      g.fillRect(px, py, ts, ts);
     }
   }
 
@@ -59,8 +93,8 @@ export function paintWorldTexture(scene: Phaser.Scene, world: GeneratedWorld): P
   for (let ty = 0; ty < world.height; ty += 1) {
     for (let tx = 0; tx < world.width; tx += 1) {
       if (world.tiles[ty * world.width + tx] !== Tile.Road) continue;
-      const px = tx * world.tileSize + world.tileSize / 2 - 1;
-      const py = ty * world.tileSize + world.tileSize / 2 - 1;
+      const px = tx * ts + ts / 2 - 1;
+      const py = ty * ts + ts / 2 - 1;
       g.fillRect(px, py, 2, 2);
     }
   }

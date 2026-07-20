@@ -8,6 +8,7 @@ const defaultSnapshot = (): GameDebugSnapshot => ({
   vehicle: null,
   heat: 0,
   mission: { id: null, objective: null },
+  civBias: { pedPreferred: 0, pedTotal: 0, carPreferred: 0, carTotal: 0 },
   counts: { pedestrians: 0, traffic: 0, police: 0 },
   fps: 0,
 });
@@ -27,6 +28,7 @@ export function patchDebugSnapshot(partial: Partial<GameDebugSnapshot>): void {
     vehicle: partial.vehicle === undefined ? snapshot.vehicle : partial.vehicle,
     mission: partial.mission ?? snapshot.mission,
     counts: partial.counts ?? snapshot.counts,
+    civBias: partial.civBias ?? snapshot.civBias,
   };
   publish();
 }

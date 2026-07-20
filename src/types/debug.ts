@@ -8,6 +8,12 @@ export interface GameDebugSnapshot {
   mission: { id: string | null; objective: string | null };
   counts: { pedestrians: number; traffic: number; police: number };
   fps: number;
+  civBias?: {
+    pedPreferred: number;
+    pedTotal: number;
+    carPreferred: number;
+    carTotal: number;
+  };
 }
 
 export interface HarborTestHooks {
@@ -16,6 +22,8 @@ export interface HarborTestHooks {
   acceptNearby: () => boolean;
   acceptPoint: (missionId: string) => { x: number; y: number } | null;
   moveNearFleet: () => void;
+  setZoom: (z: number) => void;
+  signalDanger: () => void;
 }
 
 declare global {
