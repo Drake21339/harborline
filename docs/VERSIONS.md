@@ -43,4 +43,4 @@ git worktree remove ../harborline-v0.2.0
 | Tag | Commit (full SHA) |
 |---|---|
 | `v0.1.0` | `0c73941e29f05b97047e49f91d19e07ec6360a29` |
-| `v0.2.0` | *(filled after tag)* |
+| `v0.2.0` | `0ae42e35b6c5273438a5a66c09311fb4d8c58d70` |
