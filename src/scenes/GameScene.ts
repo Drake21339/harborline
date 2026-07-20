@@ -12,6 +12,7 @@ import {
   facingFromPoints,
 } from "../systems/playerCombat";
 import type { CombatantState } from "../systems/combatTypes";
+import { CivilianRuntime } from "../systems/CivilianRuntime";
 import { VehicleRuntime } from "../vehicles/VehicleRuntime";
 import { generateWorld } from "../world/generateWorld";
 import { createCollisionBodies, paintWorldTexture } from "../world/renderWorld";
@@ -29,6 +30,7 @@ export class GameScene extends Phaser.Scene {
   private world!: GeneratedWorld;
   private combat!: CombatantState;
   private vehicles!: VehicleRuntime;
+  private civilians!: CivilianRuntime;
   private readonly keysDown = new Set<string>();
   private removeKeyListeners: (() => void) | null = null;
   private districtToast!: Phaser.GameObjects.Text;
@@ -69,6 +71,7 @@ export class GameScene extends Phaser.Scene {
 
     this.vehicles = new VehicleRuntime(this, this.world);
     this.vehicles.spawnFleet(spawnX, spawnY);
+    this.civilians = new CivilianRuntime(this, this.world);
 
     this.aimLine = this.add
       .rectangle(spawnX, spawnY, 22, 4, 0xffffff, 0.85)
@@ -284,6 +287,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.updateProjectiles();
+    this.civilians.update(now, this.player.x, this.player.y, dt);
 
     const tileX = Math.floor(this.player.x / this.world.tileSize);
     const tileY = Math.floor(this.player.y / this.world.tileSize);
@@ -339,6 +343,7 @@ export class GameScene extends Phaser.Scene {
     if (canFireRanged(this.combat, now)) {
       consumeRangedShot(this.combat, now);
       this.spawnProjectile();
+      this.civilians.signalDanger(this.player.x, this.player.y, now);
       return;
     }
 
@@ -346,6 +351,7 @@ export class GameScene extends Phaser.Scene {
       consumeMelee(this.combat, now);
       this.flashMeleeArc();
       this.tryHitscanDummy(COMBAT.meleeRange, COMBAT.meleeDamage);
+      this.civilians.signalDanger(this.player.x, this.player.y, now, 90);
     }
   }
 
@@ -451,7 +457,11 @@ export class GameScene extends Phaser.Scene {
         : null,
       heat: 0,
       mission: { id: null, objective: null },
-      counts: { pedestrians: 0, traffic: 0, police: 0 },
+      counts: {
+        pedestrians: this.civilians.counts.pedestrians,
+        traffic: this.civilians.counts.traffic,
+        police: 0,
+      },
       fps: Math.round(this.game.loop.actualFps),
     });
   }

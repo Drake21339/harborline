@@ -97,3 +97,22 @@ npm run test:e2e → 1 passed enter/drive/exit ~1.1s
 ### Next slice (Build Order #5)
 
 Pooled pedestrians + road traffic with caps and flee/react.
+
+---
+
+## 2026-07-20 — Slice 5 Civilians (green)
+
+- Pooled peds (cap 64) + traffic (cap 40); spawn/cull around player; sidewalk/road cells.
+- Attack/melee triggers flee tint+speed; counts on `__GAME_DEBUG__`; e2e asserts counts > 0.
+
+### Verification (observed)
+
+```text
+npm run check → OK
+npm run test → 13 passed
+npm run test:e2e → 1 passed (incl. civilian counts) ~1.1s
+```
+
+### Next slice (Build Order #6)
+
+Pickups, repair, safehouse/respawn, resource refresh.

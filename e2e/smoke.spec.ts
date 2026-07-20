@@ -80,6 +80,14 @@ test("boots, starts, moves, and enter/drive/exit vehicle", async ({ page }) => {
   expect(after.inVehicle).toBe(false);
   expect(after.x).toBeGreaterThan(before.x);
 
+  await page.waitForFunction(
+    () =>
+      (window.__GAME_DEBUG__?.counts.pedestrians ?? 0) > 0 &&
+      (window.__GAME_DEBUG__?.counts.traffic ?? 0) > 0,
+    null,
+    { timeout: 8_000 },
+  );
+
   await page.screenshot({ path: "test-results/harborline-vehicle-smoke.png", fullPage: true });
   expect(pageErrors, `page errors: ${pageErrors.join(" | ")}`).toEqual([]);
   expect(consoleErrors, `console errors: ${consoleErrors.join(" | ")}`).toEqual([]);
