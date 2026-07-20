@@ -7,26 +7,28 @@ Technical: versions are **git tags** on `origin`. Load with `scripts/play-versio
 | Version | Tag | Date | What it is |
 |---|---|---|---|
 | **0.1.0** | `v0.1.0` | 2026-07-20 | First playable Definition-of-Done sandbox (Build Order 1–10). Keyboard-first controls; Phaser interim art; top-down 3D pinned as future presentation (ADR-005). |
+| **0.2.0** | `v0.2.0` | 2026-07-20 | Systems polish (P1–P5): in-world mission accepts, city AI tile bias, vehicle↔world collision, presentation/SFX pass, minimap cache. Mega finish AFK docs staged for next run (→ planned v0.3.0). |
 
 ## How to load a historical version
 
 ```bash
 # From the main repo — boots that tag in a sibling worktree
 ./scripts/play-version.sh v0.1.0
+./scripts/play-version.sh v0.2.0
 ```
 
 Or manually:
 
 ```bash
-git fetch origin tag v0.1.0
-git worktree add ../harborline-v0.1.0 v0.1.0
-cd ../harborline-v0.1.0 && npm install && npm run dev
+git fetch origin tag v0.2.0
+git worktree add ../harborline-v0.2.0 v0.2.0
+cd ../harborline-v0.2.0 && npm install && npm run dev
 ```
 
 Open the URL Vite prints. Quit when done; remove the worktree with:
 
 ```bash
-git worktree remove ../harborline-v0.1.0
+git worktree remove ../harborline-v0.2.0
 ```
 
 ## How to register the next version
@@ -41,3 +43,4 @@ git worktree remove ../harborline-v0.1.0
 | Tag | Commit (full SHA) |
 |---|---|
 | `v0.1.0` | `0c73941e29f05b97047e49f91d19e07ec6360a29` |
+| `v0.2.0` | *(filled after tag)* |

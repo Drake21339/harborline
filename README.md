@@ -70,7 +70,8 @@ Fully playable **with or without a mouse** (keyboard-first).
 Historical builds are git tags — see [`docs/VERSIONS.md`](/Users/danielkirkpatrick/GAMES/NOT_GTA_1/docs/VERSIONS.md).
 
 ```bash
-./scripts/play-version.sh v0.1.0   # first playable DoD in a side folder
+./scripts/play-version.sh v0.1.0   # first playable DoD
+./scripts/play-version.sh v0.2.0   # systems polish bookmark
 ```
 
 ## Testing

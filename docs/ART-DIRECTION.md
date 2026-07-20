@@ -22,6 +22,7 @@ Phaser flat primitives / painted tiles = **interim playable stand-in**. Do not t
 
 ## For agents
 
-- **Systems polish AFK first** (`docs/WALKAWAY-AFK-POLISH-PROMPT.md`): deepen gameplay/feel; evidence screenshots only — **no** art-director iterate-until-perfect loop (ADR-007).
-- **Artwork polish AFK later** (not written yet): in-depth visual / top-down 3D presentation pass after systems polish DoD — screenshot→iterate with an explicit budget.
-- Do **not** silently rip out Phaser for a full 3D engine during systems polish.
+- **Systems polish AFK** (`docs/WALKAWAY-AFK-POLISH-PROMPT.md`): done on `main` (P1–P5). Evidence screenshots only; no art-director loop (ADR-007).
+- **Mega finish-the-game AFK** (`docs/WALKAWAY-AFK-FINISH-GAME-PROMPT.md`): Daniel-authorized (ADR-008) — mission soul + **art-director loop with budgets** + Suno music slots. Prefer Phaser **faux top-down 3D** under locked camera; full mesh engine only as last resort.
+- Suno instrumentals: `docs/SUNO-INSTRUMENTAL-PROMPTS.md` → drop files in `public/audio/`.
+- Do **not** treat flat interim art as the forever end state (ADR-005).

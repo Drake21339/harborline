@@ -339,6 +339,15 @@ npm run verify
 
 Met. Non-blocking remaining limits: Phaser flats still interim (no 3D engine), mission scripting still lightweight, FPS not profiled on low-end hardware, no licensed music/voice.
 
+---
+
+## 2026-07-20 — Bookmark v0.2.0 + mega finish AFK authored
+
+- Version strings bumped to **0.2.0**; git tag `v0.2.0` bookmarks systems-polish game state.
+- Mega finish-the-game AFK written: `docs/WALKAWAY-AFK-FINISH-GAME-PROMPT.md` + `docs/GROK-FINISH-SLICE-PROMPTS.md` (F1–F6; art-director loop; finish → planned **v0.3.0**).
+- Suno instrumental prompts: `docs/SUNO-INSTRUMENTAL-PROMPTS.md` → `public/audio/`.
+- Load bookmark: `./scripts/play-version.sh v0.2.0`
+
 ### Art direction pin (2026-07-20)
 
 - **Top-down 3D** is the presentation target (ADR-005 / `docs/ART-DIRECTION.md`).
