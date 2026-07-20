@@ -9,6 +9,7 @@ Technical: versions are **git tags** on `origin`. Load with `scripts/play-versio
 | **0.1.0** | `v0.1.0` | 2026-07-20 | First playable Definition-of-Done sandbox (Build Order 1–10). Keyboard-first controls; Phaser interim art; top-down 3D pinned as future presentation (ADR-005). |
 | **0.2.0** | `v0.2.0` | 2026-07-20 | Systems polish (P1–P5): in-world mission accepts, city AI tile bias, vehicle↔world collision, presentation/SFX pass, minimap cache. Mega finish AFK docs staged for next run (→ planned v0.3.0). |
 | **0.3.0** | *(tag pending Daniel)* | 2026-07-20 | Finish-Game (F1–F6): mission soul, city/drive/combat juice, art-director title/world/HUD, Suno audio productize, version strings 0.3.0. Git tag not created by AFK — Daniel tags when happy. |
+| **0.4.0** | *(tag pending Daniel)* | 2026-07-20 | City Depth Overhaul: multi-lane roads + nav graph, graph NPC AI, Phaser+Three.js top-down 3D (ADR-009), weapons (melee/pistol/SMG/shotgun), heat crash retune, paint shops ($150 recolor + clear heat). |
 
 ## How to load a historical version
 

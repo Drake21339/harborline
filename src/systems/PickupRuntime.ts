@@ -15,6 +15,8 @@ const COLORS: Record<string, number> = {
   ammo: 0xffe066,
   cash: 0x7dffa8,
   repair: 0x66b3ff,
+  weapon_smg: 0xff8844,
+  weapon_shotgun: 0xcc66ff,
 };
 
 export class PickupRuntime {

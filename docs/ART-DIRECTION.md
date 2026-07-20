@@ -13,16 +13,18 @@ Not the hard term: “2.5D” (too ambiguous). Casual nickname only.
 
 ## What “3D” means here
 
-- Buildings/cars/people can be real 3D meshes (or strong faux-3D) with height, lighting, and readable facades
+- Buildings/cars/people are real 3D meshes with height, lighting, and readable facades (ADR-009)
 - Camera does **not** become free third-person orbit like GTA III+
 
-## Current build (v0.3.0 Finish)
+## Current build (v0.4.0 City Depth)
 
-Phaser **faux top-down 3D** under a locked camera: building roof/face/shadow/windows, district palettes, vehicle cabin/headlight/shadow cues, brand-first title, arcade HUD. Still not a full mesh engine — that remains optional last resort (ADR-005 / finish AFK).
+- **Three.js** orthographic mesh city under Phaser HUD/input/physics (ADR-009)
+- Road hierarchy: local 2-lane, arterial 4-lane, freeway (6 + median)
+- Person-sized peds / car-sized vehicles; graph-following NPC traffic
+- Fallback: baked Phaser `paintWorldTexture` if WebGL cannot start
 
 ## For agents
 
-- **Systems polish AFK** (`docs/WALKAWAY-AFK-POLISH-PROMPT.md`): done on `main` (P1–P5). Evidence screenshots only; no art-director loop (ADR-007).
-- **Mega finish-the-game AFK** (`docs/WALKAWAY-AFK-FINISH-GAME-PROMPT.md`): Daniel-authorized (ADR-008) — mission soul + **art-director loop with budgets** + Suno music slots. Prefer Phaser **faux top-down 3D** under locked camera; full mesh engine only as last resort.
+- Do **not** treat flat interim art as the forever end state (ADR-005 / ADR-009).
+- Prefer mesh/material/lighting iteration over painting more 2D faux roofs.
 - Suno instrumentals: `docs/SUNO-INSTRUMENTAL-PROMPTS.md` → drop files in `public/audio/`.
-- Do **not** treat flat interim art as the forever end state (ADR-005).

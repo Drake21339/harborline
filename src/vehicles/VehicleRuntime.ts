@@ -30,6 +30,10 @@ export class VehicleRuntime {
   /** Cleared by GameScene after juice (camera nudge / skid). */
   lastImpact: { impactSpeed: number; damage: number; x: number; y: number } | null = null;
   private lastSkidAt = 0;
+  /** When Three.js draws vehicles, hide Phaser body art (keep physics rect). */
+  private overlayVisible = true;
+  /** Runtime paint overrides (paint shop). */
+  private readonly paintColors = new Map<string, number>();
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -80,6 +84,56 @@ export class VehicleRuntime {
   get active(): RuntimeVehicle | null {
     if (!this.activeId) return null;
     return this.vehicles.find((v) => v.state.id === this.activeId) ?? null;
+  }
+
+  setOverlayVisible(visible: boolean): void {
+    this.overlayVisible = visible;
+    for (const v of this.vehicles) {
+      v.roof.setVisible(visible);
+      v.shadow.setVisible(visible);
+      v.headlight.setVisible(visible);
+      v.brakeLight.setVisible(visible);
+      // Keep a nearly-invisible body for physics / enter radius.
+      v.view.setAlpha(visible ? 1 : 0.02);
+    }
+  }
+
+  setPaintColor(vehicleId: string, color: number): void {
+    this.paintColors.set(vehicleId, color);
+    const v = this.vehicles.find((x) => x.state.id === vehicleId);
+    if (v) {
+      v.def = { ...v.def, color };
+      v.view.setFillStyle(color);
+    }
+  }
+
+  paintActiveOrNearest(x: number, y: number, color: number): string | null {
+    const active = this.active;
+    if (active) {
+      this.setPaintColor(active.state.id, color);
+      return active.state.id;
+    }
+    let best: RuntimeVehicle | null = null;
+    let bestD = 70;
+    for (const v of this.vehicles) {
+      if (v.state.destroyed) continue;
+      const d = Math.hypot(v.state.x - x, v.state.y - y);
+      if (d < bestD) {
+        bestD = d;
+        best = v;
+      }
+    }
+    if (!best) return null;
+    this.setPaintColor(best.state.id, color);
+    return best.state.id;
+  }
+
+  get bodyColor(): (id: string) => number {
+    return (id: string) => {
+      const painted = this.paintColors.get(id);
+      if (painted !== undefined) return painted;
+      return this.vehicles.find((v) => v.state.id === id)?.def.color ?? 0xffffff;
+    };
   }
 
   tryEnter(playerX: number, playerY: number): boolean {
@@ -216,32 +270,39 @@ export class VehicleRuntime {
     v.roof.setPosition(v.state.x - c * 2, v.state.y - s * 2);
     v.roof.setRotation(v.state.heading);
     // Don't overwrite a same-frame impact flash (pale yellow).
+    const baseColor = this.paintColors.get(v.state.id) ?? v.def.color;
     if (v.view.fillColor !== 0xffeeaa) {
-      const bodyColor = stageTint(v.def.color, stage);
+      const bodyColor = stageTint(baseColor, stage);
       v.view.setFillStyle(bodyColor);
       v.roof.setFillStyle(blend(bodyColor, 0x0a1520, 0.4));
     }
     const show = !v.state.destroyed || stage === "destroyed";
     v.view.setVisible(show);
-    v.roof.setVisible(show && stage !== "destroyed");
-    v.shadow.setVisible(show);
-    v.headlight.setVisible(show && stage !== "destroyed");
-    if (stage === "critical") {
-      const a = 0.75 + 0.25 * Math.sin(Date.now() / 90);
-      v.view.setAlpha(a);
-      v.roof.setAlpha(a);
-    } else if (stage === "destroyed") {
-      v.view.setAlpha(0.85);
+    v.view.setAlpha(this.overlayVisible ? (stage === "destroyed" ? 0.85 : 1) : 0.02);
+    v.roof.setVisible(this.overlayVisible && show && stage !== "destroyed");
+    v.shadow.setVisible(this.overlayVisible && show);
+    v.headlight.setVisible(this.overlayVisible && show && stage !== "destroyed");
+    if (this.overlayVisible) {
+      if (stage === "critical") {
+        const a = 0.75 + 0.25 * Math.sin(Date.now() / 90);
+        v.view.setAlpha(a);
+        v.roof.setAlpha(a);
+      } else if (stage === "destroyed") {
+        v.view.setAlpha(0.85);
+      } else {
+        v.view.setAlpha(1);
+        v.roof.setAlpha(1);
+      }
     } else {
-      v.view.setAlpha(1);
-      v.roof.setAlpha(1);
+      v.view.setAlpha(0.02);
+      v.roof.setAlpha(0);
     }
     if (v.state.destroyed) {
       v.view.setFillStyle(0x442222);
       v.roof.setVisible(false);
       v.headlight.setVisible(false);
       v.brakeLight.setAlpha(0);
-    } else {
+    } else if (this.overlayVisible) {
       const noseX = v.state.x + c * (v.def.width * 0.38);
       const noseY = v.state.y + s * (v.def.width * 0.38);
       v.headlight.setPosition(noseX, noseY);
@@ -254,6 +315,9 @@ export class VehicleRuntime {
       v.brakeLight.setDisplaySize(braking ? 14 : 8, braking ? 6 : 4);
       v.brakeLight.setFillStyle(braking ? 0xff1818 : 0xaa2020);
       v.brakeLight.setAlpha(braking || v.state.speed < -10 ? 1 : 0.2);
+    } else {
+      v.brakeLight.setAlpha(0);
+      v.headlight.setAlpha(0);
     }
     const body = v.view.body as Phaser.Physics.Arcade.Body | null;
     if (body) {

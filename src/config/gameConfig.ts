@@ -10,7 +10,8 @@ export const CITY_SIZE_TILES = 128;
 export const PLAYER = {
   walkSpeed: 140,
   sprintSpeed: 220,
-  radius: 10,
+  /** Person-sized footprint (~14px diam on 32px tiles). */
+  radius: 7,
   maxHealth: 100,
 } as const;
 

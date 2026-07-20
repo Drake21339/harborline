@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { RoadClass } from "./roadTypes";
 import type { GeneratedWorld } from "./types";
 import { Tile } from "./tileTypes";
 import { districtAt } from "./types";
@@ -111,9 +112,19 @@ export function paintWorldTexture(scene: Phaser.Scene, world: GeneratedWorld): P
       }
 
       if (tile === Tile.Road) {
-        const asphalt = blend(color, hash % 2 === 0 ? 0x2a2a32 : 0x3a3a44, 0.25);
+        const cls = world.roadClass[ty * world.width + tx] ?? RoadClass.Local;
+        let base = color;
+        if (cls === RoadClass.Freeway) base = 0x2a2a30;
+        else if (cls === RoadClass.Arterial) base = 0x34343e;
+        else base = 0x3a3a44;
+        const asphalt = blend(base, hash % 2 === 0 ? 0x222228 : 0x404048, 0.2);
         g.fillStyle(asphalt, 1);
         g.fillRect(px, py, ts, ts);
+        // Freeway edge stripe.
+        if (cls === RoadClass.Freeway && hash % 3 === 0) {
+          g.fillStyle(0xffffff, 0.35);
+          g.fillRect(px + 2, py + 2, 3, ts - 4);
+        }
         continue;
       }
 

@@ -1,17 +1,22 @@
-import { COMBAT, type CombatantState } from "./combatTypes";
+import { COMBAT, syncAmmoMirror, type CombatantState } from "./combatTypes";
+import { activeWeaponDef, createWeaponInventory } from "./weapons";
 
 export function createPlayerCombat(maxHealth: number): CombatantState {
-  return {
+  const weapons = createWeaponInventory();
+  const state: CombatantState = {
     health: maxHealth,
     maxHealth,
     iFrameUntil: 0,
     facing: 0,
-    ammo: COMBAT.startAmmo,
-    maxAmmo: COMBAT.maxAmmo,
+    ammo: weapons.ammo.pistol,
+    maxAmmo: 48,
     fireCooldownUntil: 0,
     meleeCooldownUntil: 0,
     flashUntil: 0,
+    weapons,
   };
+  syncAmmoMirror(state);
+  return state;
 }
 
 export function applyDamage(
@@ -32,20 +37,35 @@ export function applyDamage(
 }
 
 export function canFireRanged(state: CombatantState, nowMs: number): boolean {
-  return state.ammo > 0 && nowMs >= state.fireCooldownUntil && state.health > 0;
+  const def = activeWeaponDef(state.weapons);
+  if (def.isMelee) return false;
+  return (
+    state.weapons.ammo[def.id] >= def.ammoPerShot &&
+    nowMs >= state.fireCooldownUntil &&
+    state.health > 0
+  );
 }
 
 export function canMelee(state: CombatantState, nowMs: number): boolean {
-  return nowMs >= state.meleeCooldownUntil && state.health > 0;
+  if (state.health <= 0 || nowMs < state.meleeCooldownUntil) return false;
+  const def = activeWeaponDef(state.weapons);
+  if (def.isMelee) return true;
+  // Melee fallback when the active gun is dry.
+  return state.weapons.ammo[def.id] <= 0;
 }
 
 export function consumeRangedShot(state: CombatantState, nowMs: number): void {
-  state.ammo = Math.max(0, state.ammo - 1);
-  state.fireCooldownUntil = nowMs + COMBAT.fireCooldownMs;
+  const def = activeWeaponDef(state.weapons);
+  if (def.isMelee) return;
+  state.weapons.ammo[def.id] = Math.max(0, state.weapons.ammo[def.id] - def.ammoPerShot);
+  state.fireCooldownUntil = nowMs + def.cooldownMs;
+  syncAmmoMirror(state);
 }
 
 export function consumeMelee(state: CombatantState, nowMs: number): void {
-  state.meleeCooldownUntil = nowMs + COMBAT.meleeCooldownMs;
+  const def = activeWeaponDef(state.weapons);
+  const cd = def.isMelee ? def.cooldownMs : COMBAT.meleeCooldownMs;
+  state.meleeCooldownUntil = nowMs + cd;
 }
 
 export function facingFromPoints(

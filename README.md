@@ -4,7 +4,7 @@ Clean-room top-down urban action sandbox for the browser. Original city, charact
 
 **No Rockstar / DMA Design IP** (maps, names, logos, sprites, music, dialogue, or source) is included.
 
-**Presentation target:** **top-down 3D** (3D look, locked top-down camera). Current Phaser art is an interim stand-in — see [`docs/ART-DIRECTION.md`](/Users/danielkirkpatrick/GAMES/NOT_GTA_1/docs/ART-DIRECTION.md).
+**Presentation:** **top-down 3D** via Phaser + Three.js (locked bird’s-eye camera) — see [`docs/ART-DIRECTION.md`](docs/ART-DIRECTION.md) and [`docs/ADR-009-TOP-DOWN-3D.md`](docs/ADR-009-TOP-DOWN-3D.md).
 
 Pinned defaults: title **Harborline**, seed `harborline-1997`, tile **32px**, city **128×128**.
 
@@ -38,9 +38,10 @@ Fully playable **with or without a mouse** (keyboard-first).
 - **Enter** — start from title (click optional; unlocks audio)
 - **WASD** / arrows — move on foot; throttle/steer in vehicles
 - **Shift** — sprint
-- **E** — enter/exit vehicle; accept/retry available missions near their plaza markers
+- **E** — enter/exit vehicle; accept missions; use paint shops ($150 recolor + clear heat)
+- **1–4** / **Q** / **Tab** — weapons (Fists, Pistol, SMG, Shotgun)
 - **Aim** — mouse if recently moved; otherwise face walk direction
-- **Fire** — hold **F** or **J** (keyboard) or **LMB** (mouse); melee when ammo empty
+- **Fire** — hold **F** or **J** (keyboard) or **LMB** (mouse); melee when ammo empty / fists
 - **Space** — handbrake
 - **R** — safehouse respawn
 - **M** — expand/collapse minimap
@@ -49,11 +50,12 @@ Fully playable **with or without a mouse** (keyboard-first).
 
 ## Systems
 
-- Seeded districts (Pier Ward, Midstack, Ridge Hollow, Freight Cut, Greenbelt) with collision + glanceable district silhouettes
-- On-foot combat (muzzle/melee/hit feedback), pickups, safehouse
-- Six vehicles: compact, sedan, sports, van, Harbor Cab, Patrol — arcade drive with world solid collision + impact damage
-- Pooled pedestrians + traffic (sidewalk/road bias, flee reactions, caps ~64/40)
-- Heat 0–5 with police pursuit / arrest / decay
+- Seeded districts with multi-lane roads (2-lane / 4-lane / freeway) + nav graph
+- Top-down 3D mesh city (Three.js) with Phaser HUD/input/physics (2D fallback)
+- On-foot combat with weapon inventory, pickups (incl. SMG/shotgun), safehouse, paint shops
+- Six vehicles — arcade drive with world solid collision + impact damage
+- Graph-following pedestrians + traffic (flee reactions, caps ~64/40)
+- Heat 0–5 with police pursuit / arrest / decay (softened crash threshold)
 - Five mission types, each startable in-world from plaza accept markers
 - HUD, cached minimap (M expand), Web Audio after gesture (SFX + Suno beds in `public/audio/`), localStorage save
 

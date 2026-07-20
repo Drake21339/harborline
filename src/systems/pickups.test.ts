@@ -13,6 +13,7 @@ describe("pickups", () => {
   it("applies health ammo cash and repair amounts", () => {
     const combat = createPlayerCombat(100);
     combat.health = 40;
+    combat.weapons.ammo.pistol = 2;
     combat.ammo = 2;
     const wallet = createWallet();
     applyPickupToPlayer("health", 30, combat, wallet);
@@ -23,6 +24,17 @@ describe("pickups", () => {
     expect(wallet.cash).toBe(25);
     expect(repair.vehicleRepair).toBe(0);
     expect(applyPickupToPlayer("repair", 40, combat, wallet).vehicleRepair).toBe(40);
+  });
+
+  it("grants SMG and shotgun pickups", () => {
+    const combat = createPlayerCombat(100);
+    const wallet = createWallet();
+    applyPickupToPlayer("weapon_smg", 40, combat, wallet);
+    expect(combat.weapons.owned.smg).toBe(true);
+    expect(combat.weapons.active).toBe("smg");
+    applyPickupToPlayer("weapon_shotgun", 8, combat, wallet);
+    expect(combat.weapons.owned.shotgun).toBe(true);
+    expect(combat.weapons.active).toBe("shotgun");
   });
 
   it("collects then respawns after timer", () => {
@@ -37,6 +49,7 @@ describe("pickups", () => {
   it("respawns player at safehouse with restored health", () => {
     const combat = createPlayerCombat(100);
     combat.health = 0;
+    combat.weapons.ammo.pistol = 0;
     combat.ammo = 0;
     const pos = respawnAtSafehouse(combat, 100, 200);
     expect(pos).toEqual({ x: 100, y: 200 });

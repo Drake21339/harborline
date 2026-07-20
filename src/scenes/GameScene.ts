@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { COLORS, GAME_HEIGHT, GAME_WIDTH, PLAYER, WORLD_SEED } from "../config/gameConfig";
-import { COMBAT } from "../systems/combatTypes";
+import { WorldRenderer3D } from "../render3d/WorldRenderer3D";
+import { COMBAT, syncAmmoMirror } from "../systems/combatTypes";
 import { patchDebugSnapshot } from "../systems/debugSnapshot";
 import {
   applyDamage,
@@ -18,15 +19,24 @@ import { CivilianRuntime } from "../systems/CivilianRuntime";
 import {
   applyArrestPenalties,
   createHeatState,
+  HEAT,
   reportOffense,
   tickHeat,
   type HeatState,
 } from "../systems/heat";
+import { nearestPaintShop, tryUsePaintShop } from "../systems/paintShop";
 import { PickupRuntime } from "../systems/PickupRuntime";
 import { PoliceRuntime } from "../systems/PoliceRuntime";
 import { audioBus } from "../systems/audioBus";
 import { createWallet, isAtSafehouse, respawnAtSafehouse, type WalletState } from "../systems/pickups";
 import { loadSave, resetSave, writeSave, type SaveData } from "../systems/save";
+import {
+  activeWeaponDef,
+  cycleWeapon,
+  selectWeapon,
+  WEAPON_ORDER,
+  type WeaponId,
+} from "../systems/weapons";
 import { Minimap } from "../ui/Minimap";
 import { VehicleRuntime } from "../vehicles/VehicleRuntime";
 import { generateWorld } from "../world/generateWorld";
@@ -77,6 +87,10 @@ export class GameScene extends Phaser.Scene {
   private solids!: Phaser.Physics.Arcade.StaticGroup;
   private lastCombatHealth = 0;
   private arrestedThisFrame = false;
+  private world3d: WorldRenderer3D | null = null;
+  private worldImage: Phaser.GameObjects.Image | null = null;
+  private paintPrompt!: Phaser.GameObjects.Text;
+  private use3d = false;
 
   constructor() {
     super("GameScene");
@@ -93,7 +107,7 @@ export class GameScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, worldPixels, worldPixels);
     this.cameras.main.setBounds(0, 0, worldPixels, worldPixels);
 
-    paintWorldTexture(this, this.world);
+    this.worldImage = paintWorldTexture(this, this.world);
     this.solids = createCollisionBodies(this, this.world);
 
     const spawnX = this.world.spawn.pixelX;
@@ -110,6 +124,22 @@ export class GameScene extends Phaser.Scene {
     this.vehicles.spawnFleet(spawnX, spawnY);
     this.civilians = new CivilianRuntime(this, this.world);
     this.police = new PoliceRuntime(this);
+
+    // Top-down 3D mesh layer (Phaser keeps HUD/input/physics).
+    const host = this.game.canvas.parentElement;
+    if (host) {
+      this.world3d = new WorldRenderer3D(host, this.world);
+      this.use3d = this.world3d.active;
+      if (this.use3d) {
+        this.worldImage.setVisible(false);
+        this.cameras.main.setBackgroundColor("rgba(0,0,0,0)");
+        this.vehicles.setOverlayVisible(false);
+        this.civilians.setOverlayVisible(false);
+        this.police.setOverlayVisible(false);
+        this.player.setAlpha(0.05);
+        this.world3d.setViewSize(this.scale.width, this.scale.height);
+      }
+    }
     this.heat = createHeatState();
     this.wallet = createWallet();
     this.wallet.cash = this.save.cash;
@@ -132,6 +162,30 @@ export class GameScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setDepth(12);
+
+    for (const shop of this.world.paintShops) {
+      this.add.rectangle(shop.x, shop.y, 44, 44, 0xff66aa, 0.28).setDepth(3);
+      this.add
+        .text(shop.x, shop.y - 30, "PAINT $150", {
+          fontFamily: "monospace",
+          fontSize: "11px",
+          color: "#ffc0dd",
+        })
+        .setOrigin(0.5)
+        .setDepth(12);
+    }
+    this.paintPrompt = this.add
+      .text(GAME_WIDTH / 2, GAME_HEIGHT - 36, "", {
+        fontFamily: "monospace",
+        fontSize: "16px",
+        color: "#ffc0dd",
+        backgroundColor: "#00000099",
+        padding: { x: 10, y: 6 },
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(120)
+      .setAlpha(0);
 
     this.aimLine = this.add
       .rectangle(spawnX, spawnY, 22, 4, 0xffffff, 0.85)
@@ -209,7 +263,9 @@ export class GameScene extends Phaser.Scene {
 
       // Fire is hold-to-shoot in update (F/J) so keyboard-only matches LMB.
       if (key === "e") {
-        if (
+        if (this.tryPaintShop()) {
+          // painted
+        } else if (
           !this.vehicles.activeId &&
           this.missions.tryAcceptNearby(this.player.x, this.player.y, this.time.now)
         ) {
@@ -220,6 +276,24 @@ export class GameScene extends Phaser.Scene {
       }
       if (key === "r") {
         this.respawnStub();
+      }
+      if (key === "1" || key === "2" || key === "3" || key === "4") {
+        const id = WEAPON_ORDER[Number(key) - 1] as WeaponId;
+        if (selectWeapon(this.combat.weapons, id)) {
+          syncAmmoMirror(this.combat);
+          audioBus.playSfx("ui");
+        }
+      }
+      if (key === "q") {
+        cycleWeapon(this.combat.weapons, -1);
+        syncAmmoMirror(this.combat);
+        audioBus.playSfx("ui");
+      }
+      if (key === "tab") {
+        event.preventDefault();
+        cycleWeapon(this.combat.weapons, 1);
+        syncAmmoMirror(this.combat);
+        audioBus.playSfx("ui");
       }
     };
     const onKeyUp = (event: KeyboardEvent): void => {
@@ -252,6 +326,8 @@ export class GameScene extends Phaser.Scene {
       this.removeKeyListeners = null;
       this.keysDown.clear();
       this.input.removeAllListeners();
+      this.world3d?.destroy();
+      this.world3d = null;
     });
 
     // Left HUD chrome — late-90s arcade stack, not SaaS cards.
@@ -268,7 +344,7 @@ export class GameScene extends Phaser.Scene {
       .setDepth(99);
 
     this.add
-      .text(16, 14, "WASD · E · F/J fire · Space brake · M map · P pause · H help", {
+      .text(16, 14, "WASD · E · 1–4 weapons · F/J fire · Space brake · M map · P pause · H help", {
         fontFamily: "monospace",
         fontSize: "12px",
         color: COLORS.uiMuted,
@@ -355,7 +431,7 @@ export class GameScene extends Phaser.Scene {
         const intensity = Math.min(0.012, 0.003 + impact.damage * 0.00025);
         this.cameras.main.shake(120, intensity);
         audioBus.playSfx("crash");
-        if (impact.impactSpeed >= 55) {
+        if (impact.impactSpeed >= HEAT.crashSpeedThreshold) {
           reportOffense(this.heat, "crash", now);
         }
       }
@@ -584,9 +660,27 @@ export class GameScene extends Phaser.Scene {
       const safe = isAtSafehouse(this.player.x, this.player.y, this.safehouse.x, this.safehouse.y)
         ? " · SAFEHOUSE"
         : "";
+      const wdef = activeWeaponDef(this.combat.weapons);
+      const ammoStr = wdef.isMelee ? "—" : String(this.combat.ammo);
       this.hudText.setText(
-        `HP ${Math.ceil(this.combat.health)}/${this.combat.maxHealth} · Ammo ${this.combat.ammo} · ${money}${safe}`,
+        `HP ${Math.ceil(this.combat.health)}/${this.combat.maxHealth} · ${wdef.label} ${ammoStr} · ${money}${safe}`,
       );
+    }
+
+    const shopNear = nearestPaintShop(
+      this.world.paintShops,
+      this.player.x,
+      this.player.y,
+    );
+    if (shopNear) {
+      this.paintPrompt.setText(`E — Paint job $${shopNear.fee} (clears heat)`);
+      this.paintPrompt.setAlpha(1);
+    } else {
+      this.paintPrompt.setAlpha(0);
+    }
+
+    if (this.use3d && this.world3d) {
+      this.syncWorld3d();
     }
     const pips = "●".repeat(this.heat.level) + "○".repeat(Math.max(0, 5 - this.heat.level));
     const arresting = this.police.inArrestRange;
@@ -662,14 +756,15 @@ export class GameScene extends Phaser.Scene {
       "",
       "WASD / Arrows — move or drive",
       "Shift — sprint   Space — handbrake",
-      "E — enter/exit / accept missions near markers",
+      "E — enter/exit / missions / paint shop",
+      "1–4 / Q / Tab — weapons (Fists, Pistol, SMG, Shotgun)",
       "Aim — mouse if moved, else face walk direction",
       "Fire — hold F or J (keyboard) or LMB (mouse)",
       "M — expand map   R — safehouse respawn",
       "P / Esc — pause   F1 / H — help",
       "",
+      "Paint shops: pay $150 to recolor + clear heat",
       "Fully playable without a mouse",
-      "H / F1 again closes help",
     ]);
     this.refreshPauseText();
   }
@@ -764,39 +859,126 @@ export class GameScene extends Phaser.Scene {
   private tryAttack(): void {
     const now = this.time.now;
     if (this.combat.health <= 0) return;
+    const def = activeWeaponDef(this.combat.weapons);
 
     if (canFireRanged(this.combat, now)) {
       consumeRangedShot(this.combat, now);
-      this.spawnProjectile();
+      for (let i = 0; i < def.pellets; i += 1) {
+        const spread = (Math.random() - 0.5) * 2 * def.spread;
+        this.spawnProjectile(def.projectileSpeed, def.damage, this.combat.facing + spread);
+      }
       audioBus.playSfx("shoot");
       this.civilians.signalDanger(this.player.x, this.player.y, now);
       reportOffense(this.heat, "attack", now);
       return;
     }
 
-    if (this.combat.ammo <= 0 && canMelee(this.combat, now)) {
+    if (canMelee(this.combat, now)) {
       consumeMelee(this.combat, now);
+      const melee = def.isMelee ? def : { range: COMBAT.meleeRange, damage: COMBAT.meleeDamage };
       this.flashMeleeArc();
-      this.tryHitscanDummy(COMBAT.meleeRange, COMBAT.meleeDamage);
+      this.tryHitscanDummy(melee.range, melee.damage);
       this.civilians.signalDanger(this.player.x, this.player.y, now, 90);
       reportOffense(this.heat, "attack", now);
     }
   }
 
-  private spawnProjectile(): void {
-    const cos = Math.cos(this.combat.facing);
-    const sin = Math.sin(this.combat.facing);
+  private tryPaintShop(): boolean {
+    const shop = nearestPaintShop(this.world.paintShops, this.player.x, this.player.y);
+    if (!shop) return false;
+    const result = tryUsePaintShop({
+      wallet: this.wallet,
+      heat: this.heat,
+      fee: shop.fee,
+      rng: () => Math.random(),
+    });
+    if (!result.ok) {
+      audioBus.playSfx("ui");
+      this.paintPrompt.setText("Need $150 for a paint job");
+      this.paintPrompt.setAlpha(1);
+      return true;
+    }
+    this.heat = result.heat;
+    this.police.clearAll();
+    if (result.color !== null) {
+      this.vehicles.paintActiveOrNearest(this.player.x, this.player.y, result.color);
+    }
+    audioBus.playSfx("pickup");
+    this.paintPrompt.setText("Painted — heat cleared");
+    this.paintPrompt.setAlpha(1);
+    writeSave({ ...this.save, cash: this.wallet.cash, score: this.wallet.score });
+    return true;
+  }
+
+  private syncWorld3d(): void {
+    if (!this.world3d) return;
+    const cam = this.cameras.main;
+    this.world3d.setViewSize(this.scale.width, this.scale.height);
+    this.world3d.syncCamera(cam.scrollX + cam.width / 2, cam.scrollY + cam.height / 2, cam.zoom);
+    const poses = [
+      {
+        id: "player",
+        x: this.player.x,
+        y: this.player.y,
+        heading: this.combat.facing,
+        kind: "player" as const,
+        color: COLORS.player,
+      },
+      ...this.civilians.poses.map((p) => ({
+        id: p.id,
+        x: p.x,
+        y: p.y,
+        heading: p.heading,
+        kind: p.kind === "car" ? ("car" as const) : ("ped" as const),
+        color: p.kind === "car" ? 0x9aa3b5 : 0xb8c4a8,
+        width: p.kind === "car" ? 48 : undefined,
+        height: p.kind === "car" ? 24 : undefined,
+        fleeing: p.fleeing,
+      })),
+      ...this.vehicles.vehicles.map((v) => ({
+        id: v.state.id,
+        x: v.state.x,
+        y: v.state.y,
+        heading: v.state.heading,
+        kind: "vehicle" as const,
+        color: this.vehicles.bodyColor(v.state.id),
+        width: v.def.width,
+        height: v.def.height,
+      })),
+      ...this.police.positions.map((p, i) => ({
+        id: `cop-${i}`,
+        x: p.x,
+        y: p.y,
+        heading: 0,
+        kind: "police" as const,
+        color: 0x3a5cff,
+        width: 52,
+        height: 26,
+      })),
+    ];
+    this.world3d.syncEntities(poses);
+    this.world3d.render();
+  }
+
+  private spawnProjectile(
+    speed: number = COMBAT.projectileSpeed,
+    _damage: number = COMBAT.rangedDamage,
+    facing: number = this.combat.facing,
+  ): void {
+    const cos = Math.cos(facing);
+    const sin = Math.sin(facing);
     const muzzleX = this.player.x + cos * 14;
     const muzzleY = this.player.y + sin * 14;
     this.spawnMuzzleFlash(muzzleX, muzzleY);
     const bolt = this.add
       .rectangle(muzzleX + cos * 6, muzzleY + sin * 6, 12, 4, 0xffe08a)
       .setDepth(12)
-      .setRotation(this.combat.facing);
+      .setRotation(facing);
+    (bolt as Phaser.GameObjects.Rectangle & { damage?: number }).damage = _damage;
     this.physics.add.existing(bolt);
     const b = bolt.body as Phaser.Physics.Arcade.Body;
     b.setAllowGravity(false);
-    b.setVelocity(cos * COMBAT.projectileSpeed, sin * COMBAT.projectileSpeed);
+    b.setVelocity(cos * speed, sin * speed);
     this.projectiles.add(bolt);
     this.time.delayedCall(700, () => {
       bolt.destroy();
@@ -882,15 +1064,17 @@ export class GameScene extends Phaser.Scene {
     for (const obj of this.projectiles.getChildren()) {
       const bolt = obj as Phaser.GameObjects.Rectangle;
       if (!bolt.active) continue;
+      const dmg =
+        (bolt as Phaser.GameObjects.Rectangle & { damage?: number }).damage ?? COMBAT.rangedDamage;
       if (Phaser.Geom.Intersects.RectangleToRectangle(bolt.getBounds(), crateBounds)) {
-        this.missions.damageCrate(COMBAT.rangedDamage);
+        this.missions.damageCrate(dmg);
         this.spawnHitSpark(bolt.x, bolt.y);
         bolt.destroy();
         continue;
       }
       if (Phaser.Geom.Intersects.RectangleToRectangle(bolt.getBounds(), bounds)) {
         if (this.dummy.health > 0) {
-          this.dummy.health = Math.max(0, this.dummy.health - COMBAT.rangedDamage);
+          this.dummy.health = Math.max(0, this.dummy.health - dmg);
           this.dummy.label.setText(String(this.dummy.health));
           this.dummy.body.setFillStyle(0xffffff);
           this.spawnHitSpark(this.dummy.body.x, this.dummy.body.y);
