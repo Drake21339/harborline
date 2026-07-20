@@ -99,7 +99,7 @@ compact, sedan, sports, van, taxi-like, police cruiser — each with max speed, 
 
 ### Controls
 
-WASD/arrows · Shift sprint · E enter/exit/interact · mouse aim · LMB/F fire · Space handbrake · R restart/unstick · M map · P/Esc pause · Enter start · F1/H help.
+Keyboard-first (mouse optional): WASD/arrows · Shift sprint · E enter/exit/interact · mouse aim if moved else face walk direction · F/J or LMB fire · Space handbrake · R restart/unstick · M map · P/Esc pause · Enter start · F1/H help.
 
 ### Heat
 

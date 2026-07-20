@@ -9,6 +9,7 @@ import {
   consumeMelee,
   consumeRangedShot,
   createPlayerCombat,
+  facingFromMove,
   facingFromPoints,
 } from "../systems/playerCombat";
 import type { CombatantState } from "../systems/combatTypes";
@@ -66,6 +67,9 @@ export class GameScene extends Phaser.Scene {
   private lastDistrictId: string | null = null;
   private toastUntil = 0;
   private pointerDown = false;
+  private lastPointerX = Number.NaN;
+  private lastPointerY = Number.NaN;
+  private mouseAimUntil = 0;
   private hazard!: Phaser.GameObjects.Rectangle;
   private dummy!: DummyTarget;
   private projectiles!: Phaser.GameObjects.Group;
@@ -198,9 +202,7 @@ export class GameScene extends Phaser.Scene {
         return;
       }
 
-      if (key === "f" && !this.vehicles.activeId) {
-        this.tryAttack();
-      }
+      // Fire is hold-to-shoot in update (F/J) so keyboard-only matches LMB.
       if (key === "e") {
         if (
           !this.vehicles.activeId &&
@@ -230,11 +232,14 @@ export class GameScene extends Phaser.Scene {
       if (this.paused || this.helpOpen) return;
       if (p.leftButtonDown()) {
         this.pointerDown = true;
-        if (!this.vehicles.activeId) this.tryAttack();
+        this.mouseAimUntil = this.time.now + 800;
       }
     });
     this.input.on("pointerup", () => {
       this.pointerDown = false;
+    });
+    this.input.on("pointermove", () => {
+      this.mouseAimUntil = this.time.now + 600;
     });
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -248,7 +253,7 @@ export class GameScene extends Phaser.Scene {
       .text(
         12,
         12,
-        "WASD · E interact · LMB/F fire · Space brake · M map · P/Esc pause · F1/H help",
+        "WASD · E interact · F/J or LMB fire · Space brake · M map · P/Esc pause · F1/H help",
         {
           fontFamily: "monospace",
           fontSize: "13px",
@@ -372,17 +377,37 @@ export class GameScene extends Phaser.Scene {
       body.setVelocity(vx * speed, vy * speed);
 
       const pointer = this.input.activePointer;
-      const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-      this.combat.facing = facingFromPoints(
-        this.player.x,
-        this.player.y,
-        worldPoint.x,
-        worldPoint.y,
-      );
+      if (
+        Number.isNaN(this.lastPointerX) ||
+        pointer.x !== this.lastPointerX ||
+        pointer.y !== this.lastPointerY
+      ) {
+        if (!Number.isNaN(this.lastPointerX)) {
+          this.mouseAimUntil = now + 600;
+        }
+        this.lastPointerX = pointer.x;
+        this.lastPointerY = pointer.y;
+      }
+
+      const useMouseAim = this.pointerDown || now < this.mouseAimUntil;
+      if (useMouseAim) {
+        const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+        this.combat.facing = facingFromPoints(
+          this.player.x,
+          this.player.y,
+          worldPoint.x,
+          worldPoint.y,
+        );
+      } else {
+        // Keyboard-only: face walk direction (twin-stick without a stick).
+        this.combat.facing = facingFromMove(vx, vy, this.combat.facing);
+      }
       this.aimLine.setPosition(this.player.x, this.player.y);
       this.aimLine.setRotation(this.combat.facing);
 
-      if (this.pointerDown) this.tryAttack();
+      const fireHeld =
+        this.pointerDown || this.keysDown.has("f") || this.keysDown.has("j");
+      if (fireHeld) this.tryAttack();
 
       const hz = this.hazard.getBounds();
       const pb = this.player.getBounds();
@@ -536,10 +561,12 @@ export class GameScene extends Phaser.Scene {
       "WASD / Arrows — move or drive",
       "Shift — sprint   Space — handbrake",
       "E — enter/exit / accept mission",
-      "Mouse + LMB/F — aim & fire",
+      "Aim: mouse if moved, else face walk direction",
+      "Fire: hold F or J (keyboard) or LMB (mouse)",
       "M — expand map   R — safehouse respawn",
       "P / Esc — pause   F1 / H — help",
       "",
+      "Fully playable without a mouse",
       "P/Esc again resumes",
     ]);
     this.refreshPauseText();

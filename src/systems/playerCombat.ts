@@ -56,3 +56,9 @@ export function facingFromPoints(
 ): number {
   return Math.atan2(toY - fromY, toX - fromX);
 }
+
+/** Keyboard-only aim: face move vector; keep last facing when standing still. */
+export function facingFromMove(vx: number, vy: number, fallback: number): number {
+  if (vx === 0 && vy === 0) return fallback;
+  return Math.atan2(vy, vx);
+}

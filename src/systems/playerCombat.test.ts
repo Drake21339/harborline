@@ -6,6 +6,7 @@ import {
   consumeMelee,
   consumeRangedShot,
   createPlayerCombat,
+  facingFromMove,
 } from "./playerCombat";
 
 describe("playerCombat", () => {
@@ -39,5 +40,11 @@ describe("playerCombat", () => {
     const r = applyDamage(s, 50, 0);
     expect(r.killed).toBe(true);
     expect(s.health).toBe(0);
+  });
+
+  it("faces move direction and keeps fallback when still", () => {
+    expect(facingFromMove(1, 0, 0.5)).toBeCloseTo(0, 5);
+    expect(facingFromMove(0, 1, 0.5)).toBeCloseTo(Math.PI / 2, 5);
+    expect(facingFromMove(0, 0, 1.25)).toBe(1.25);
   });
 });

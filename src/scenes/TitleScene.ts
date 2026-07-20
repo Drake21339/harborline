@@ -1,9 +1,12 @@
 import Phaser from "phaser";
 import { COLORS, GAME_TITLE } from "../config/gameConfig";
+import { GAME_VERSION_LABEL } from "../config/version";
 import { audioBus } from "../systems/audioBus";
 import { patchDebugSnapshot } from "../systems/debugSnapshot";
 
 export class TitleScene extends Phaser.Scene {
+  private removeKeyListener: (() => void) | null = null;
+
   constructor() {
     super("TitleScene");
   }
@@ -24,7 +27,7 @@ export class TitleScene extends Phaser.Scene {
       .text(
         width / 2,
         height * 0.48,
-        "Clean-room arcade city sandbox\nPress Enter or click to start",
+        "Clean-room arcade city sandbox\nPress Enter to start (mouse optional)",
         {
           fontFamily: "monospace",
           fontSize: "20px",
@@ -38,7 +41,7 @@ export class TitleScene extends Phaser.Scene {
       .text(
         width / 2,
         height * 0.72,
-        "WASD move · E missions/vehicles · P pause · F1 help",
+        "Keyboard-first · WASD · F fire · E interact · mouse aim optional",
         {
           fontFamily: "monospace",
           fontSize: "16px",
@@ -46,6 +49,14 @@ export class TitleScene extends Phaser.Scene {
           align: "center",
         },
       )
+      .setOrigin(0.5);
+
+    this.add
+      .text(width / 2, height * 0.88, GAME_VERSION_LABEL, {
+        fontFamily: "monospace",
+        fontSize: "14px",
+        color: COLORS.uiMuted,
+      })
       .setOrigin(0.5);
 
     patchDebugSnapshot({
@@ -59,10 +70,23 @@ export class TitleScene extends Phaser.Scene {
       counts: { pedestrians: 0, traffic: 0, police: 0 },
     });
 
+    let started = false;
     const start = (): void => {
+      if (started) return;
+      started = true;
       void audioBus.unlock();
       this.scene.start("GameScene");
     };
+
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === "Enter") start();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    this.removeKeyListener = () => window.removeEventListener("keydown", onKeyDown);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.removeKeyListener?.();
+      this.removeKeyListener = null;
+    });
 
     this.input.keyboard?.once("keydown-ENTER", start);
     this.input.once("pointerdown", start);

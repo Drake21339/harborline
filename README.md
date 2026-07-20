@@ -4,6 +4,8 @@ Clean-room top-down urban action sandbox for the browser. Original city, charact
 
 **No Rockstar / DMA Design IP** (maps, names, logos, sprites, music, dialogue, or source) is included.
 
+**Presentation target:** **top-down 3D** (3D look, locked top-down camera). Current Phaser art is an interim stand-in — see [`docs/ART-DIRECTION.md`](/Users/danielkirkpatrick/GAMES/NOT_GTA_1/docs/ART-DIRECTION.md).
+
 Pinned defaults: title **Harborline**, seed `harborline-1997`, tile **32px**, city **128×128**.
 
 ## Requirements
@@ -31,11 +33,14 @@ npx playwright install chromium   # once, for e2e
 
 ## Controls
 
-- **Enter** / click — start from title (also unlocks audio)
+Fully playable **with or without a mouse** (keyboard-first).
+
+- **Enter** — start from title (click optional; unlocks audio)
 - **WASD** / arrows — move on foot; throttle/steer in vehicles
 - **Shift** — sprint
 - **E** — enter/exit vehicle; accept/retry intro mission near spawn
-- **Mouse** + **LMB** / **F** — aim and fire (melee when ammo empty)
+- **Aim** — mouse if recently moved; otherwise face walk direction
+- **Fire** — hold **F** or **J** (keyboard) or **LMB** (mouse); melee when ammo empty
 - **Space** — handbrake
 - **R** — safehouse respawn
 - **M** — expand/collapse minimap
@@ -59,6 +64,14 @@ npx playwright install chromium   # once, for e2e
 3. **Cool Off** — raise heat, escape until clear
 4. **Harbor Hops** — multi-stop packages
 5. **Crate Crack** — destruction
+
+## Versions
+
+Historical builds are git tags — see [`docs/VERSIONS.md`](/Users/danielkirkpatrick/GAMES/NOT_GTA_1/docs/VERSIONS.md).
+
+```bash
+./scripts/play-version.sh v0.1.0   # first playable DoD in a side folder
+```
 
 ## Testing
 

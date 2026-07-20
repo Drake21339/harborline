@@ -19,13 +19,11 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
     timeout: 20_000,
   });
 
-  await page.locator("canvas").click({ position: { x: 10, y: 10 } });
+  // Keyboard-only start (no mouse required).
   await page.keyboard.press("Enter");
   await page.waitForFunction(() => window.__GAME_DEBUG__?.scene === "GameScene", null, {
     timeout: 10_000,
   });
-
-  await page.locator("canvas").click({ position: { x: 40, y: 40 } });
 
   const before = await page.evaluate(() => {
     const d = window.__GAME_DEBUG__;
@@ -116,7 +114,6 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
   await page.waitForFunction(() => window.__GAME_DEBUG__?.bootCompleted === true, null, {
     timeout: 20_000,
   });
-  await page.locator("canvas").click({ position: { x: 10, y: 10 } });
   await page.keyboard.press("Enter");
   await page.waitForFunction(() => window.__GAME_DEBUG__?.scene === "GameScene", null, {
     timeout: 10_000,

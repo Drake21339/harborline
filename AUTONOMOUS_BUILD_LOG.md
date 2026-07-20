@@ -220,3 +220,20 @@ npm run verify
 ### Definition of Done
 
 Met for playable Harborline sandbox on pinned defaults (title/seed/tile/city). Non-blocking polish remains (extra VFX, more mission scripting depth, further FPS tuning).
+
+### Polish AFK (ready, not started)
+
+- One-paste: `docs/WALKAWAY-AFK-POLISH-PROMPT.md`
+- Slices P1–P5: `docs/GROK-POLISH-SLICE-PROMPTS.md`
+- Start at **P1** (mission depth) when Daniel runs the polish AFK.
+
+### Art direction pin (2026-07-20)
+
+- **Top-down 3D** is the presentation target (ADR-005 / `docs/ART-DIRECTION.md`).
+- Phaser flats remain interim; full 3D migration is a separate track after polish.
+
+### v0.1.0 registered
+
+- Version history: `docs/VERSIONS.md` + tag `v0.1.0` + `scripts/play-version.sh`
+- Title screen shows `v0.1.0`
+- Includes keyboard-first controls, polish AFK prompts, art-direction pin
