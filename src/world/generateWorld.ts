@@ -8,7 +8,7 @@ const DISTRICTS: DistrictDef[] = [
   {
     id: "pier-ward",
     name: "Pier Ward",
-    groundColor: 0x2a4860,
+    groundColor: 0x1e4a68,
     x0: 0,
     y0: 0,
     x1: 48,
@@ -17,7 +17,7 @@ const DISTRICTS: DistrictDef[] = [
   {
     id: "midstack",
     name: "Midstack",
-    groundColor: 0x454838,
+    groundColor: 0x4a4a38,
     x0: 48,
     y0: 0,
     x1: 96,
@@ -26,7 +26,7 @@ const DISTRICTS: DistrictDef[] = [
   {
     id: "ridge-hollow",
     name: "Ridge Hollow",
-    groundColor: 0x5a4a30,
+    groundColor: 0x6a5230,
     x0: 96,
     y0: 0,
     x1: 128,
@@ -35,7 +35,7 @@ const DISTRICTS: DistrictDef[] = [
   {
     id: "freight-cut",
     name: "Freight Cut",
-    groundColor: 0x6a4030,
+    groundColor: 0x7a3820,
     x0: 0,
     y0: 56,
     x1: 80,
@@ -44,7 +44,7 @@ const DISTRICTS: DistrictDef[] = [
   {
     id: "greenbelt",
     name: "Greenbelt",
-    groundColor: 0x1e5a32,
+    groundColor: 0x146a2e,
     x0: 80,
     y0: 72,
     x1: 128,

@@ -18,6 +18,9 @@ export interface RuntimeVehicle {
   state: VehicleSimState;
   def: VehicleDef;
   view: Phaser.GameObjects.Rectangle;
+  roof: Phaser.GameObjects.Rectangle;
+  shadow: Phaser.GameObjects.Rectangle;
+  headlight: Phaser.GameObjects.Rectangle;
   brakeLight: Phaser.GameObjects.Rectangle;
 }
 
@@ -46,9 +49,21 @@ export class VehicleRuntime {
     for (const p of placements) {
       const def = VEHICLE_DEFS[p.id];
       const state = createVehicleState(`veh-${p.id}`, def, p.x, p.y, p.heading);
+      const shadow = this.scene.add
+        .rectangle(p.x + 4, p.y + 5, def.width, def.height, 0x000000, 0.35)
+        .setDepth(7)
+        .setRotation(p.heading);
       const view = this.scene.add
         .rectangle(p.x, p.y, def.width, def.height, def.color)
         .setDepth(8)
+        .setRotation(p.heading);
+      const roof = this.scene.add
+        .rectangle(p.x, p.y, def.width * 0.62, def.height * 0.42, blend(def.color, 0x102030, 0.35))
+        .setDepth(9)
+        .setRotation(p.heading);
+      const headlight = this.scene.add
+        .rectangle(p.x, p.y, 5, 4, 0xfff2c0, 0.95)
+        .setDepth(10)
         .setRotation(p.heading);
       this.scene.physics.add.existing(view);
       const body = view.body as Phaser.Physics.Arcade.Body;
@@ -56,8 +71,8 @@ export class VehicleRuntime {
       body.setAllowGravity(false);
       const brakeLight = this.scene.add
         .rectangle(p.x, p.y, 8, 4, 0xff3030, 0)
-        .setDepth(9);
-      this.vehicles.push({ state, def, view, brakeLight });
+        .setDepth(10);
+      this.vehicles.push({ state, def, view, roof, shadow, headlight, brakeLight });
     }
   }
 
@@ -188,26 +203,49 @@ export class VehicleRuntime {
 
   private syncView(v: RuntimeVehicle, braking: boolean): void {
     const stage = damageStage(v.state.health, v.state.maxHealth);
+    const c = Math.cos(v.state.heading);
+    const s = Math.sin(v.state.heading);
+    v.shadow.setPosition(v.state.x + 5, v.state.y + 6);
+    v.shadow.setRotation(v.state.heading);
     v.view.setPosition(v.state.x, v.state.y);
     v.view.setRotation(v.state.heading);
+    // Cabin sits slightly aft of nose for silhouette readability.
+    v.roof.setPosition(v.state.x - c * 2, v.state.y - s * 2);
+    v.roof.setRotation(v.state.heading);
     // Don't overwrite a same-frame impact flash (pale yellow).
     if (v.view.fillColor !== 0xffeeaa) {
-      v.view.setFillStyle(stageTint(v.def.color, stage));
+      const bodyColor = stageTint(v.def.color, stage);
+      v.view.setFillStyle(bodyColor);
+      v.roof.setFillStyle(blend(bodyColor, 0x0a1520, 0.4));
     }
-    v.view.setVisible(!v.state.destroyed || stage === "destroyed");
+    const show = !v.state.destroyed || stage === "destroyed";
+    v.view.setVisible(show);
+    v.roof.setVisible(show && stage !== "destroyed");
+    v.shadow.setVisible(show);
+    v.headlight.setVisible(show && stage !== "destroyed");
     if (stage === "critical") {
-      v.view.setAlpha(0.75 + 0.25 * Math.sin(Date.now() / 90));
+      const a = 0.75 + 0.25 * Math.sin(Date.now() / 90);
+      v.view.setAlpha(a);
+      v.roof.setAlpha(a);
     } else if (stage === "destroyed") {
       v.view.setAlpha(0.85);
     } else {
       v.view.setAlpha(1);
+      v.roof.setAlpha(1);
     }
     if (v.state.destroyed) {
       v.view.setFillStyle(0x442222);
+      v.roof.setVisible(false);
+      v.headlight.setVisible(false);
       v.brakeLight.setAlpha(0);
     } else {
-      const backX = v.state.x - Math.cos(v.state.heading) * (v.def.width * 0.35);
-      const backY = v.state.y - Math.sin(v.state.heading) * (v.def.width * 0.35);
+      const noseX = v.state.x + c * (v.def.width * 0.38);
+      const noseY = v.state.y + s * (v.def.width * 0.38);
+      v.headlight.setPosition(noseX, noseY);
+      v.headlight.setRotation(v.state.heading);
+      v.headlight.setAlpha(0.85);
+      const backX = v.state.x - c * (v.def.width * 0.35);
+      const backY = v.state.y - s * (v.def.width * 0.35);
       v.brakeLight.setPosition(backX, backY);
       v.brakeLight.setRotation(v.state.heading);
       v.brakeLight.setDisplaySize(braking ? 14 : 8, braking ? 6 : 4);
@@ -223,4 +261,17 @@ export class VehicleRuntime {
       }
     }
   }
+}
+
+function blend(a: number, b: number, t: number): number {
+  const ar = (a >> 16) & 0xff;
+  const ag = (a >> 8) & 0xff;
+  const ab = a & 0xff;
+  const br = (b >> 16) & 0xff;
+  const bg = (b >> 8) & 0xff;
+  const bb = b & 0xff;
+  const r = Math.round(ar + (br - ar) * t);
+  const g = Math.round(ag + (bg - ag) * t);
+  const bl = Math.round(ab + (bb - ab) * t);
+  return (r << 16) | (g << 8) | bl;
 }

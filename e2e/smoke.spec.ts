@@ -22,6 +22,7 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
     timeout: 10_000,
   });
   await page.screenshot({ path: "test-results/title-brand.png", fullPage: true });
+  await page.screenshot({ path: "test-results/finish/title-2.png", fullPage: true });
 
   // Keyboard-only start (no mouse required).
   await page.keyboard.press("Enter");
@@ -29,6 +30,7 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
     timeout: 10_000,
   });
   await page.screenshot({ path: "test-results/game-hud.png", fullPage: true });
+  await page.screenshot({ path: "test-results/finish/world-midstack-3.png", fullPage: true });
 
   const before = await page.evaluate(() => {
     const d = window.__GAME_DEBUG__;
@@ -131,6 +133,26 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
     { timeout: 8_000 },
   );
 
+  // Art captures before flee spray clutters the frame.
+  await page.evaluate(() => {
+    const t = window.__HARBOR_TEST__;
+    if (!t) throw new Error("missing test hooks");
+    t.moveNearFleet();
+    t.setZoom(1.35);
+  });
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: "test-results/finish/vehicle-fleet-close-2.png", fullPage: true });
+
+  await page.evaluate(() => {
+    window.__HARBOR_TEST__?.setZoom(0.28);
+  });
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: "test-results/districts-read.png", fullPage: true });
+  await page.screenshot({ path: "test-results/finish/world-district-contrast-2.png", fullPage: true });
+  await page.evaluate(() => {
+    window.__HARBOR_TEST__?.setZoom(1);
+  });
+
   // Caps still enforced; tile-bias counters accumulate; flee tint path still trips.
   const civ = await page.evaluate(() => {
     const d = window.__GAME_DEBUG__;
@@ -162,16 +184,6 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
   expect(distinct.size).toBeGreaterThanOrEqual(4);
   expect(distinct.has("ui")).toBe(true);
   expect(distinct.has("engine")).toBe(true);
-
-  // District glance evidence (zoomed-out Midstack vantage shows ≥3 district palettes).
-  await page.evaluate(() => {
-    window.__HARBOR_TEST__?.setZoom(0.28);
-  });
-  await page.waitForTimeout(200);
-  await page.screenshot({ path: "test-results/districts-read.png", fullPage: true });
-  await page.evaluate(() => {
-    window.__HARBOR_TEST__?.setZoom(1);
-  });
 
   const after = await page.evaluate(() => {
     const d = window.__GAME_DEBUG__;

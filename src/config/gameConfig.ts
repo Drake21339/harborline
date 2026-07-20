@@ -15,14 +15,14 @@ export const PLAYER = {
 } as const;
 
 export const COLORS = {
-  sky: 0x1a2740,
-  ground: 0x2f3b2f,
-  road: 0x3a3a42,
+  sky: 0x0e1c30,
+  ground: 0x2a3828,
+  road: 0x32323a,
   building: 0x5a4a3a,
-  water: 0x2a4a6a,
-  park: 0x3a6b3e,
+  water: 0x1e3f5c,
+  park: 0x2f5e34,
   player: 0xf2c14e,
   uiText: "#e8eefc",
   uiMuted: "#9db0d0",
-  accent: "#7dffa8",
+  accent: "#9ef0c0",
 } as const;

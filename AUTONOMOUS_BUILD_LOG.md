@@ -408,3 +408,30 @@ npm run test:e2e → 1 passed ~2.0s
 ### Next phase (Finish F3)
 
 Art-director world / title / vehicles.
+
+---
+
+## 2026-07-20 — Finish F3 Art-director world/title/vehicles (green)
+
+Art-director loop (screenshot → Read → critique → patch → reshoot). Budgets used: title×2, midstack×3, district×2, fleet×2 (under max 6).
+
+| Surface | Verdict | Evidence | Notes |
+|---|---|---|---|
+| title | **PASS** | `test-results/finish/title-2.png` | Brand-first Harborline, night harbor + skyline + pier line, no purple-glow |
+| world-midstack | **PASS** (soft leftover) | `test-results/finish/world-midstack-3.png` | Roads/player/HUD readable; building windows + district tints; faux height present but still Phaser-flat vs true meshes |
+| world-district-contrast | **PASS** | `test-results/finish/world-district-contrast-2.png` | ≥3 glance-distinct palettes (harbor teal / mid grey-olive / freight rust / greenbelt) at zoom-out |
+| vehicle-fleet-close | **PASS** (soft leftover) | `test-results/finish/vehicle-fleet-close-2.png` | Shadow + cabin + headlight/brake cues; archetypes still rectangle-based |
+
+Upgrades: stronger building roof/face/shadow/windows, district ground contrast, vehicle roof/shadow/headlights, title brand motion + sodium haze.
+
+### Verification (observed)
+
+```text
+npm run check → typecheck OK, lint OK
+npm run test → 47 passed
+npm run test:e2e → 1 passed ~2.3s (finish screenshots written)
+```
+
+### Next phase (Finish F4)
+
+Art-director HUD / UI / minimap / pause / help.
