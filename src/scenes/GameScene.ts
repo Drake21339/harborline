@@ -132,7 +132,13 @@ export class GameScene extends Phaser.Scene {
       this.use3d = this.world3d.active;
       if (this.use3d) {
         this.worldImage.setVisible(false);
+        // Let Three.js city show through the Phaser canvas.
         this.cameras.main.setBackgroundColor("rgba(0,0,0,0)");
+        const canvas = this.game.canvas;
+        canvas.style.background = "transparent";
+        // Canvas renderer: keep clear alpha so underlay WebGL city is visible.
+        const ctx = canvas.getContext("2d");
+        if (ctx) ctx.globalCompositeOperation = "source-over";
         this.vehicles.setOverlayVisible(false);
         this.civilians.setOverlayVisible(false);
         this.police.setOverlayVisible(false);

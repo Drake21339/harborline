@@ -517,28 +517,36 @@ Met for Harborline finish pass on pinned defaults (title/seed/tile/city). Soft l
 
 ---
 
-## 2026-07-20 — Graphics Beauty G1 City mesh character (green)
+## 2026-07-20 — Graphics Beauty G1 (Phaser false-start — superseded)
 
-**Foundation note:** `origin/main` has no `src/render3d/WorldRenderer3D.ts` / Three.js / ADR-009. Beauty AFK polishes the sole Phaser faux top-down 3D path (`paintWorldTexture`). Slice brief: `docs/GROK-GRAPHICS-BEAUTY-SLICES.md`.
+Started before City Depth Overhaul landed on `origin/main`. Phaser paint work in `e0f53aa` is **superseded** by merge `6e924a5` + 3D G1 below. Do not treat Phaser G1 as Beauty DoD evidence.
 
-Art-director loop: midstack×3, district×2, roads×2 (under max 5).
+---
+
+## 2026-07-20 — Graphics Beauty G1 City mesh character on WorldRenderer3D (green)
+
+Merged City Depth Overhaul (`b3568ff`) then polished `src/render3d/WorldRenderer3D.ts`.
+
+**Critical fix:** Phaser canvas was opaque over the Three.js underlay — city invisible. Set `transparent: true`, clear camera rgba(0,0,0,0), CSS stacking so WebGL city shows through HUD canvas.
+
+Art-director loop (post-merge): midstack×3, pier×2, freeway×2 (under max 5).
 
 | Surface | Verdict | Evidence | Notes |
 |---|---|---|---|
-| world-midstack | **PASS** (soft leftover) | `test-results/beauty/world-midstack-3.png` | Extruded south/east walls + lit windows + shadows; still Phaser paint vs true meshes |
-| world-district-contrast | **PASS** | `test-results/beauty/world-district-contrast-2.png` | ≥3 glance-distinct palettes (pier teal / mid olive / freight rust / greenbelt / ridge tan) |
-| world-roads-close | **PASS** | `test-results/beauty/world-roads-close-2.png` | Arterial double-gold dashes vs intersection zebra; freight/waterfront classes unit-tested |
+| world-midstack | **PASS** (soft leftover) | `test-results/beauty/world-midstack-3.png` | District height bands + roof/windows; ortho top-down still flattens side facades |
+| world-pier | **PASS** (soft leftover) | `test-results/beauty/world-pier-2.png` | Pier Ward label + cooler warehouse palette; water read still subtle at night |
+| world-freeway | **PASS** | `test-results/beauty/world-freeway-2.png` | Freeway vs local width/markings readable; median grass barriers present |
 
-Upgrades: `classifyRoad` visual classes; district mass heights; extruded building recipe; pier boardwalk / sodium pools; night vignette.
+Upgrades: per-district building mass/colors/windows; road batches by RoadClass + markings; freeway median strips; brighter night lights; transparent Phaser compositing.
 
 ### Verification (observed)
 
 ```text
 npm run check → typecheck OK, lint OK
-npm run test → 52 passed (incl. 3 classifyRoad)
-npm run test:e2e → 1 passed ~3.4s (beauty screenshots written)
+npm run test → 60 passed
+npm run test:e2e → 1 passed ~46s (beauty midstack/pier/freeway screenshots)
 ```
 
 ### Next phase (Beauty G2)
 
-Vehicles + people silhouettes + paint tint.
+Vehicles + people silhouettes + paint tint on 3D meshes.
