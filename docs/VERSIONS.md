@@ -36,8 +36,8 @@ git worktree remove ../harborline-v0.1.0
 3. Add a row to the table above.
 4. `git tag -a vX.Y.Z -m "Harborline vX.Y.Z — …"` then `git push origin vX.Y.Z`.
 
-## Tag ↔ commit (filled at register time)
+## Tag ↔ commit
 
 | Tag | Commit (full SHA) |
 |---|---|
-| `v0.1.0` | _(stamped in follow-up commit after tag)_ |
+| `v0.1.0` | `0c73941e29f05b97047e49f91d19e07ec6360a29` |
