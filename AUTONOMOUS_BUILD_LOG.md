@@ -636,3 +636,13 @@ Met on pinned defaults. Soft leftovers logged under G1–G3 (ortho top-down flat
 - Street sodium count capped for perf; low-end FPS not profiled beyond e2e Chromium
 - Ped heads read as dots at far zoom; fine at mid zoom
 - Early Phaser-only G1 commit `e0f53aa` superseded by 3D path after City Depth merge
+
+---
+
+## 2026-07-20 — Hotfix: city was invisible in real browser
+
+Daniel: “literally nothing changed.” Live proof: `use3d: true` and cars rendered, but city InstancedMesh batches were blank.
+
+**Causes:** (1) InstancedMesh frustum-culled at origin once camera left map corner; (2) `vertexColors: true` without geometry colors blanked `setColorAt` instance colors; (3) Phaser clear/compositing fights.
+
+**Fix in `0d70245`:** `frustumCulled = false`, white base material + instance colors only, transparent Phaser clear, canvas aligned to Phaser FIT box. Hard-reload `npm run dev` to see roads/water/buildings.
