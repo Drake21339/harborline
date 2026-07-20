@@ -2,7 +2,7 @@
 
 **Target model / harness:** Cursor coding agent (originally labeled “Grok 4.5”; audit treats harness capability, not a branded model card).  
 **Artifact audited:** user-supplied autonomous GTA-formula game build prompt.  
-**Outcome:** revised paste-ready prompt in `docs/REVISED-AUTONOMOUS-BUILD-PROMPT.md`.
+**Outcome:** v1 rails in `docs/REVISED-AUTONOMOUS-BUILD-PROMPT.md`, then **v2 Grok 4.5 high+fast** rewrite (same file) + `docs/GROK-SLICE-PROMPTS.md` (conductor + per-slice Goal/Constraints/Process/Done/Stop).
 
 ## Top issues (by impact)
 

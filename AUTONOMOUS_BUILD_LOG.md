@@ -23,6 +23,14 @@ npm run verify
 
 Preflight: scripts/identity/node/npm/scripts OK; FAIL only because no git commit yet (expected). Dirty tree = uncommitted scaffold.
 
+### Prompt v2 (Grok high+fast)
+
+- Walk-away one-paste: `docs/WALKAWAY-AFK-BUILD-PROMPT.md`
+- Conductor + lean appendix: `docs/REVISED-AUTONOMOUS-BUILD-PROMPT.md`
+- Slice pack: `docs/GROK-SLICE-PROMPTS.md`
+- AFK git: commit+push after each green slice (Daniel-approved 2026-07-20)
+- Start gameplay build at **slice 2** (world).
+
 ### Next slice (Build Order #2)
 
 Seeded worldgen with real collision / districts (replace placeholder grid).
