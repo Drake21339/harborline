@@ -2,12 +2,15 @@ import { describe, expect, it } from "vitest";
 import { generateWorld } from "../world/generateWorld";
 import { WORLD_SEED } from "../config/gameConfig";
 import { VEHICLE_DEFS } from "./defs";
+import { Tile } from "../world/tileTypes";
 import {
   applyVehicleDamage,
   createVehicleState,
   damageStage,
   findNearestVehicle,
   findSafeExit,
+  impactDamageFromSpeed,
+  resolveVehicleWorldCollision,
   stepVehicle,
 } from "./vehicleSim";
 
@@ -49,5 +52,46 @@ describe("vehicleSim", () => {
     expect(exit).not.toBeNull();
     expect(exit!.x).toBeGreaterThan(0);
     expect(exit!.y).toBeGreaterThan(0);
+  });
+
+  it("blocks driving through solid tiles and reports hard-impact damage", () => {
+    const world = generateWorld(WORLD_SEED);
+    // Find a building tile near spawn to collide into.
+    let bx = -1;
+    let by = -1;
+    for (let y = 0; y < world.height && bx < 0; y += 1) {
+      for (let x = 0; x < world.width; x += 1) {
+        if (world.tiles[y * world.width + x] === Tile.Building) {
+          bx = x;
+          by = y;
+          break;
+        }
+      }
+    }
+    expect(bx).toBeGreaterThanOrEqual(0);
+    const def = VEHICLE_DEFS.compact;
+    const prevX = bx * world.tileSize - 40;
+    const prevY = by * world.tileSize + world.tileSize / 2;
+    const v = createVehicleState("hit", def, prevX, prevY, 0);
+    v.speed = 140;
+    // Place center onto the building cell.
+    v.x = bx * world.tileSize + world.tileSize / 2;
+    v.y = by * world.tileSize + world.tileSize / 2;
+    const beforeHp = v.health;
+    const hit = resolveVehicleWorldCollision(v, def, world, prevX, prevY);
+    expect(hit.hit).toBe(true);
+    expect(hit.impactSpeed).toBe(140);
+    expect(v.x).toBe(prevX);
+    expect(v.y).toBe(prevY);
+    expect(v.speed).toBe(0);
+    const dmg = impactDamageFromSpeed(hit.impactSpeed, def.collisionDamage);
+    expect(dmg).toBeGreaterThan(0);
+    applyVehicleDamage(v, dmg);
+    expect(v.health).toBeLessThan(beforeHp);
+  });
+
+  it("ignores soft scrapes below impact threshold", () => {
+    expect(impactDamageFromSpeed(20, 12)).toBe(0);
+    expect(impactDamageFromSpeed(80, 12)).toBeGreaterThan(0);
   });
 });

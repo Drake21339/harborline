@@ -270,6 +270,28 @@ npm run test:e2e → 1 passed ~1.6s (caps + district screenshot)
 
 Drive/combat juice: vehicle↔world collision + feedback.
 
+---
+
+## 2026-07-20 — Polish P3 Drive/combat juice (green)
+
+- Active vehicle collides with buildings/water/fence (sample footprint → restore pose, kill speed).
+- Hard impacts apply scaled vehicle damage; wreck path still forces safe exit in GameScene.
+- Damage stages + critical pulse + brighter/larger brake light while braking.
+- Combat feedback: muzzle flash, melee arc, hit sparks on dummy/crate.
+- Unit proof for solid block + impact damage threshold; e2e enter/drive/exit still green.
+
+### Verification (observed)
+
+```text
+npm run check → typecheck OK, lint OK
+npm run test → 39 passed (incl. 6 vehicleSim)
+npm run test:e2e → 1 passed ~1.6s
+```
+
+### Next slice (Polish P4)
+
+Presentation: title/HUD/audio/map (light interim readability).
+
 ### Art direction pin (2026-07-20)
 
 - **Top-down 3D** is the presentation target (ADR-005 / `docs/ART-DIRECTION.md`).

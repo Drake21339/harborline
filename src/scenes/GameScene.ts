@@ -687,8 +687,11 @@ export class GameScene extends Phaser.Scene {
   private spawnProjectile(): void {
     const cos = Math.cos(this.combat.facing);
     const sin = Math.sin(this.combat.facing);
+    const muzzleX = this.player.x + cos * 14;
+    const muzzleY = this.player.y + sin * 14;
+    this.spawnMuzzleFlash(muzzleX, muzzleY);
     const bolt = this.add
-      .rectangle(this.player.x + cos * 16, this.player.y + sin * 16, 10, 4, 0xffe08a)
+      .rectangle(muzzleX + cos * 6, muzzleY + sin * 6, 12, 4, 0xffe08a)
       .setDepth(12)
       .setRotation(this.combat.facing);
     this.physics.add.existing(bolt);
@@ -698,6 +701,29 @@ export class GameScene extends Phaser.Scene {
     this.projectiles.add(bolt);
     this.time.delayedCall(700, () => {
       bolt.destroy();
+    });
+  }
+
+  private spawnMuzzleFlash(x: number, y: number): void {
+    const flash = this.add.circle(x, y, 10, 0xfff2a8, 0.95).setDepth(13);
+    this.tweens.add({
+      targets: flash,
+      alpha: 0,
+      scale: 1.8,
+      duration: 90,
+      onComplete: () => flash.destroy(),
+    });
+  }
+
+  private spawnHitSpark(x: number, y: number): void {
+    const spark = this.add.rectangle(x, y, 14, 14, 0xffffff, 0.9).setDepth(14);
+    this.tweens.add({
+      targets: spark,
+      alpha: 0,
+      scaleX: 2.2,
+      scaleY: 2.2,
+      duration: 140,
+      onComplete: () => spark.destroy(),
     });
   }
 
@@ -713,7 +739,11 @@ export class GameScene extends Phaser.Scene {
     if (Math.abs(delta) > 0.55) return;
     this.dummy.health = Math.max(0, this.dummy.health - damage);
     this.dummy.label.setText(String(this.dummy.health));
-    this.dummy.body.setFillStyle(this.dummy.health > 0 ? 0x8a6cff : 0x333333);
+    this.dummy.body.setFillStyle(0xffffff);
+    this.spawnHitSpark(this.dummy.body.x, this.dummy.body.y);
+    this.time.delayedCall(80, () => {
+      this.dummy.body.setFillStyle(this.dummy.health > 0 ? 0x8a6cff : 0x333333);
+    });
   }
 
   private flashMeleeArc(): void {
@@ -721,19 +751,20 @@ export class GameScene extends Phaser.Scene {
     const sin = Math.sin(this.combat.facing);
     const arc = this.add
       .rectangle(
-        this.player.x + cos * 24,
-        this.player.y + sin * 24,
-        28,
-        16,
-        0xffffff,
-        0.5,
+        this.player.x + cos * 26,
+        this.player.y + sin * 26,
+        36,
+        20,
+        0xfff8d0,
+        0.75,
       )
       .setDepth(12)
       .setRotation(this.combat.facing);
     this.tweens.add({
       targets: arc,
       alpha: 0,
-      duration: 120,
+      scaleX: 1.35,
+      duration: 160,
       onComplete: () => arc.destroy(),
     });
   }
@@ -746,6 +777,7 @@ export class GameScene extends Phaser.Scene {
       if (!bolt.active) continue;
       if (Phaser.Geom.Intersects.RectangleToRectangle(bolt.getBounds(), crateBounds)) {
         this.missions.damageCrate(COMBAT.rangedDamage);
+        this.spawnHitSpark(bolt.x, bolt.y);
         bolt.destroy();
         continue;
       }
@@ -753,7 +785,11 @@ export class GameScene extends Phaser.Scene {
         if (this.dummy.health > 0) {
           this.dummy.health = Math.max(0, this.dummy.health - COMBAT.rangedDamage);
           this.dummy.label.setText(String(this.dummy.health));
-          this.dummy.body.setFillStyle(this.dummy.health > 0 ? 0x8a6cff : 0x333333);
+          this.dummy.body.setFillStyle(0xffffff);
+          this.spawnHitSpark(this.dummy.body.x, this.dummy.body.y);
+          this.time.delayedCall(80, () => {
+            this.dummy.body.setFillStyle(this.dummy.health > 0 ? 0x8a6cff : 0x333333);
+          });
         }
         bolt.destroy();
       }

@@ -1,4 +1,4 @@
-import { isWalkableTile } from "../world/tileTypes";
+import { isSolidTile, isWalkableTile } from "../world/tileTypes";
 import type { GeneratedWorld } from "../world/types";
 import { tileAt } from "../world/types";
 import type { VehicleDef } from "./defs";
@@ -119,6 +119,77 @@ export function stepVehicle(
 
   state.x += Math.cos(state.heading) * state.speed * dtSec;
   state.y += Math.sin(state.heading) * state.speed * dtSec;
+}
+
+export interface WorldCollisionResult {
+  hit: boolean;
+  /** Absolute speed at impact (0 if no hit). */
+  impactSpeed: number;
+}
+
+/**
+ * Keep vehicle out of buildings/water/fence. On hit: restore prior pose, kill speed,
+ * and report impactSpeed for damage scaling.
+ */
+export function resolveVehicleWorldCollision(
+  state: VehicleSimState,
+  def: VehicleDef,
+  world: GeneratedWorld,
+  prevX: number,
+  prevY: number,
+): WorldCollisionResult {
+  if (state.destroyed) return { hit: false, impactSpeed: 0 };
+  if (!vehicleOverlapsSolid(state, def, world)) {
+    return { hit: false, impactSpeed: 0 };
+  }
+  const impactSpeed = Math.abs(state.speed);
+  state.x = prevX;
+  state.y = prevY;
+  state.speed = 0;
+  // Nudge heading so the next throttle attempt can peel away.
+  state.heading += 0.35;
+  return { hit: true, impactSpeed };
+}
+
+function vehicleOverlapsSolid(
+  state: VehicleSimState,
+  def: VehicleDef,
+  world: GeneratedWorld,
+): boolean {
+  const ts = world.tileSize;
+  const hw = def.width * 0.42;
+  const hh = def.height * 0.42;
+  const c = Math.cos(state.heading);
+  const s = Math.sin(state.heading);
+  const samples: Array<[number, number]> = [
+    [0, 0],
+    [hw, 0],
+    [-hw, 0],
+    [0, hh],
+    [0, -hh],
+    [hw * 0.7, hh * 0.7],
+    [hw * 0.7, -hh * 0.7],
+    [-hw * 0.7, hh * 0.7],
+    [-hw * 0.7, -hh * 0.7],
+  ];
+  for (const [lx, ly] of samples) {
+    const px = state.x + c * lx - s * ly;
+    const py = state.y + s * lx + c * ly;
+    const tile = tileAt(world, Math.floor(px / ts), Math.floor(py / ts));
+    if (isSolidTile(tile)) return true;
+  }
+  return false;
+}
+
+/** Impact damage from a world collision; low-speed scrapes are ignored. */
+export function impactDamageFromSpeed(
+  impactSpeed: number,
+  collisionDamage: number,
+  hardThreshold = 55,
+): number {
+  if (impactSpeed < hardThreshold) return 0;
+  const t = Math.min(1, (impactSpeed - hardThreshold) / 160);
+  return collisionDamage * (0.35 + 0.9 * t);
 }
 
 function PhaserMathClamp(v: number, min: number, max: number): number {

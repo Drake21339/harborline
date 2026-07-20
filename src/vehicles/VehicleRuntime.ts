@@ -7,6 +7,8 @@ import {
   damageStage,
   findNearestVehicle,
   findSafeExit,
+  impactDamageFromSpeed,
+  resolveVehicleWorldCollision,
   stageTint,
   stepVehicle,
   type VehicleSimState,
@@ -98,17 +100,24 @@ export class VehicleRuntime {
     for (const v of this.vehicles) {
       const isActive = active?.state.id === v.state.id;
       if (isActive && !v.state.destroyed) {
+        const prevX = v.state.x;
+        const prevY = v.state.y;
         stepVehicle(v.state, v.def, input, dtSec);
         // Soft world bounds.
         const max = this.world.width * this.world.tileSize - 8;
         v.state.x = Math.max(8, Math.min(max, v.state.x));
         v.state.y = Math.max(8, Math.min(max, v.state.y));
-        // Impact damage when slamming while damaged path — simple speed scrape.
-        if (Math.abs(v.state.speed) > v.def.maxSpeed * 0.95 && input.handbrake) {
-          applyVehicleDamage(v.state, v.def.collisionDamage * 0.02);
+        const hit = resolveVehicleWorldCollision(v.state, v.def, this.world, prevX, prevY);
+        if (hit.hit) {
+          const dmg = impactDamageFromSpeed(hit.impactSpeed, v.def.collisionDamage);
+          if (dmg > 0) applyVehicleDamage(v.state, dmg);
+          // Brief impact flash on the body.
+          v.view.setFillStyle(0xffeeaa);
         }
       }
-      this.syncView(v, isActive && input.handbrake);
+      const braking =
+        isActive && (input.handbrake || input.throttle < 0 || Math.abs(v.state.speed) < 8);
+      this.syncView(v, braking);
     }
   }
 
@@ -148,8 +157,18 @@ export class VehicleRuntime {
     const stage = damageStage(v.state.health, v.state.maxHealth);
     v.view.setPosition(v.state.x, v.state.y);
     v.view.setRotation(v.state.heading);
-    v.view.setFillStyle(stageTint(v.def.color, stage));
+    // Don't overwrite a same-frame impact flash (pale yellow).
+    if (v.view.fillColor !== 0xffeeaa) {
+      v.view.setFillStyle(stageTint(v.def.color, stage));
+    }
     v.view.setVisible(!v.state.destroyed || stage === "destroyed");
+    if (stage === "critical") {
+      v.view.setAlpha(0.75 + 0.25 * Math.sin(Date.now() / 90));
+    } else if (stage === "destroyed") {
+      v.view.setAlpha(0.85);
+    } else {
+      v.view.setAlpha(1);
+    }
     if (v.state.destroyed) {
       v.view.setFillStyle(0x442222);
       v.brakeLight.setAlpha(0);
@@ -158,7 +177,9 @@ export class VehicleRuntime {
       const backY = v.state.y - Math.sin(v.state.heading) * (v.def.width * 0.35);
       v.brakeLight.setPosition(backX, backY);
       v.brakeLight.setRotation(v.state.heading);
-      v.brakeLight.setAlpha(braking || v.state.speed < -10 ? 0.9 : 0.15);
+      v.brakeLight.setDisplaySize(braking ? 14 : 8, braking ? 6 : 4);
+      v.brakeLight.setFillStyle(braking ? 0xff1818 : 0xaa2020);
+      v.brakeLight.setAlpha(braking || v.state.speed < -10 ? 1 : 0.2);
     }
     const body = v.view.body as Phaser.Physics.Arcade.Body | null;
     if (body) {
