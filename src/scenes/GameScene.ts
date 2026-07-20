@@ -31,7 +31,8 @@ import { Minimap } from "../ui/Minimap";
 import { VehicleRuntime } from "../vehicles/VehicleRuntime";
 import { generateWorld } from "../world/generateWorld";
 import { createCollisionBodies, paintWorldTexture } from "../world/renderWorld";
-import { districtAt, type GeneratedWorld } from "../world/types";
+import { Tile } from "../world/tileTypes";
+import { districtAt, tileAt, type GeneratedWorld } from "../world/types";
 
 interface DummyTarget {
   body: Phaser.GameObjects.Rectangle;
@@ -74,6 +75,8 @@ export class GameScene extends Phaser.Scene {
   private dummy!: DummyTarget;
   private projectiles!: Phaser.GameObjects.Group;
   private solids!: Phaser.Physics.Arcade.StaticGroup;
+  private lastCombatHealth = 0;
+  private arrestedThisFrame = false;
 
   constructor() {
     super("GameScene");
@@ -113,6 +116,7 @@ export class GameScene extends Phaser.Scene {
     this.wallet.score = this.save.score;
     this.pickups = new PickupRuntime(this, spawnX, spawnY);
     this.missions = new MissionRuntime(this, spawnX, spawnY);
+    this.lastCombatHealth = this.combat.health;
     this.wireTestHooks();
     this.minimap = new Minimap(this, this.world);
     // Safehouse: Midstack plaza west pad.
@@ -431,13 +435,34 @@ export class GameScene extends Phaser.Scene {
     if (this.heat.level >= 2) {
       this.civilians.signalSiren(now, 500);
     }
+    const tileX = Math.floor(this.player.x / this.world.tileSize);
+    const tileY = Math.floor(this.player.y / this.world.tileSize);
+    const ground = tileAt(this.world, tileX, tileY);
+    const nearSafehouse = isAtSafehouse(
+      this.player.x,
+      this.player.y,
+      this.safehouse.x,
+      this.safehouse.y,
+    );
+    const nearPark = ground === Tile.Park || ground === Tile.Grass;
+    const onOpenRoadWithCops =
+      ground === Tile.Road && this.police.activeCount > 0 && this.police.isPlayerSeen;
+    const decayScale = this.missions.manager.escapeDecayMultiplier({
+      nearSafehouse,
+      nearPark,
+      onOpenRoadWithCops,
+    });
+
     const heatTick = tickHeat(
       this.heat,
       dt * 1000,
       this.police.isPlayerSeen,
       this.police.inArrestRange,
+      decayScale,
     );
+    this.arrestedThisFrame = false;
     if (heatTick.arrested) {
+      this.arrestedThisFrame = true;
       this.handleArrest();
     }
     // Cleanup units when cold.
@@ -454,6 +479,25 @@ export class GameScene extends Phaser.Scene {
         else this.vehicles.repairNearest(this.player.x, this.player.y, amount);
       },
     );
+
+    // Vehicle ram can smash mission crate.
+    if (inVehicle && activeVeh && this.missions.crateAlive) {
+      const speed = Math.abs(activeVeh.state.speed);
+      if (
+        speed > 55 &&
+        Phaser.Geom.Intersects.RectangleToRectangle(
+          activeVeh.view.getBounds(),
+          this.missions.crate.getBounds(),
+        )
+      ) {
+        this.missions.damageCrate(18 + speed * 0.08);
+        this.spawnHitSpark(this.missions.crate.x, this.missions.crate.y);
+      }
+    }
+
+    const playerDamaged = this.combat.health < this.lastCombatHealth;
+    this.lastCombatHealth = this.combat.health;
+
     const stealTargetId = this.missions.manager.active?.def.targetVehicleId ?? null;
     this.missions.update(
       this.player.x,
@@ -466,6 +510,14 @@ export class GameScene extends Phaser.Scene {
         targetVehiclePresent: stealTargetId
           ? this.vehicles.vehicles.some((v) => v.state.id === stealTargetId && !v.state.destroyed)
           : true,
+        playerDamaged,
+        arrested: this.arrestedThisFrame,
+        inArrestRange: this.police.inArrestRange,
+        vehicleHealth: this.vehicles.active?.state.health ?? null,
+        nearSafehouse,
+        nearPark,
+        onOpenRoadWithCops,
+        dtMs: dt * 1000,
       },
       (cash) => {
         this.wallet.cash += cash;
@@ -475,6 +527,10 @@ export class GameScene extends Phaser.Scene {
       () => {
         audioBus.playSting("fail");
       },
+      (kind) => {
+        if (kind === "stealHeat") reportOffense(this.heat, "steal", now);
+        if (kind === "smashHeat") reportOffense(this.heat, "destroy", now);
+      },
     );
 
     // Music beds: chase when heat is up, otherwise city cruise.
@@ -482,8 +538,6 @@ export class GameScene extends Phaser.Scene {
       audioBus.setBed(this.heat.level >= 2 ? "heat" : "city");
     }
 
-    const tileX = Math.floor(this.player.x / this.world.tileSize);
-    const tileY = Math.floor(this.player.y / this.world.tileSize);
     const district = districtAt(this.world, tileX, tileY);
     if (district && district.id !== this.lastDistrictId) {
       this.showDistrictToast(district.name, district.id);

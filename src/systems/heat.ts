@@ -49,6 +49,8 @@ export function tickHeat(
   dtMs: number,
   seenByPolice: boolean,
   inArrestRange: boolean,
+  /** >1 cools faster (hide near park); <1 cools slower (open road + cops). */
+  decayScale = 1,
 ): { arrested: boolean } {
   if (state.level <= 0) {
     state.unseenMs = 0;
@@ -59,7 +61,8 @@ export function tickHeat(
   if (seenByPolice) {
     state.unseenMs = 0;
   } else {
-    state.unseenMs += dtMs;
+    const scale = Math.max(0.2, Math.min(3, decayScale));
+    state.unseenMs += dtMs * scale;
     if (state.unseenMs >= HEAT.decayUnseenMs) {
       state.level = Math.max(0, state.level - 1);
       state.unseenMs = 0;

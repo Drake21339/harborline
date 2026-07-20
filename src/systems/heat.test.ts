@@ -49,4 +49,16 @@ describe("heat", () => {
     expect(policeCapForHeat(5)).toBe(5);
     expect(applyArrestPenalties(200).cash).toBeLessThan(200);
   });
+
+  it("decayScale > 1 cools faster; < 1 cools slower", () => {
+    const fast = createHeatState();
+    reportOffense(fast, "steal", 0);
+    tickHeat(fast, HEAT.decayUnseenMs / 2, false, false, 2);
+    expect(fast.level).toBe(0);
+
+    const slow = createHeatState();
+    reportOffense(slow, "steal", 0);
+    tickHeat(slow, HEAT.decayUnseenMs - 1, false, false, 0.45);
+    expect(slow.level).toBe(1);
+  });
 });

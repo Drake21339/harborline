@@ -1,18 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { MissionManager } from "./missionManager";
+import { MissionManager, type MissionWorldHooks } from "./missionManager";
 
-function hooks(
-  partial: Partial<{
-    playerX: number;
-    playerY: number;
-    inVehicle: boolean;
-    vehicleId: string | null;
-    heat: number;
-    now: number;
-    destroyTargetAlive: boolean;
-    targetVehiclePresent: boolean;
-  }> = {},
-) {
+function hooks(partial: Partial<MissionWorldHooks> = {}): MissionWorldHooks {
   return {
     playerX: 0,
     playerY: 0,
@@ -22,6 +11,15 @@ function hooks(
     now: 1000,
     destroyTargetAlive: true,
     targetVehiclePresent: true,
+    playerDamaged: false,
+    arrested: false,
+    inArrestRange: false,
+    vehicleHealth: null,
+    nearSafehouse: false,
+    nearPark: false,
+    onOpenRoadWithCops: false,
+    crateDamaged: false,
+    dtMs: 16,
     ...partial,
   };
 }
@@ -32,12 +30,12 @@ function unlock(mgr: MissionManager, id: string): void {
 }
 
 describe("MissionManager", () => {
-  it("accepts intro and completes courier checkpoints", () => {
+  it("accepts intro and completes courier checkpoints while carrying", () => {
     const mgr = new MissionManager(100, 100);
     expect(mgr.intro.status).toBe("available");
     expect(mgr.accept("intro-courier", 1000)).toBe(true);
     expect(mgr.active?.status).toBe("active");
-    expect(mgr.active?.objective).toContain("Packet");
+    expect(mgr.active?.objective).toMatch(/parcel|Packet/i);
 
     const packet = mgr.intro.def.markers[0]!;
     mgr.tick(
@@ -47,7 +45,8 @@ describe("MissionManager", () => {
         now: 2000,
       }),
     );
-    expect(mgr.active?.objective).toContain("Drop");
+    expect(mgr.active?.carrying).toBe(true);
+    expect(mgr.active?.objective).toMatch(/Deliver|parcel/i);
 
     const drop = mgr.intro.def.markers[1]!;
     const done = mgr.tick(
@@ -60,6 +59,27 @@ describe("MissionManager", () => {
     expect(done?.status).toBe("success");
     expect(done?.reward).toBe(120);
     expect(mgr.missions[1]?.status).toBe("available");
+  });
+
+  it("courier fails when damaged while carrying (hot parcel drop)", () => {
+    const mgr = new MissionManager(0, 0);
+    mgr.accept("intro-courier", 0);
+    const packet = mgr.intro.def.markers[0]!;
+    mgr.tick(hooks({ playerX: packet.x, playerY: packet.y, now: 100 }));
+    expect(mgr.active?.carrying).toBe(true);
+    const failed = mgr.tick(hooks({ playerDamaged: true, now: 200 }));
+    expect(failed?.status).toBe("failed");
+    expect(mgr.intro.objective).toMatch(/parcel dropped/i);
+  });
+
+  it("courier fails on arrest while carrying", () => {
+    const mgr = new MissionManager(0, 0);
+    mgr.accept("intro-courier", 0);
+    const packet = mgr.intro.def.markers[0]!;
+    mgr.tick(hooks({ playerX: packet.x, playerY: packet.y, now: 100 }));
+    const failed = mgr.tick(hooks({ arrested: true, now: 200 }));
+    expect(failed?.status).toBe("failed");
+    expect(mgr.intro.objective).toMatch(/confiscated|Arrested/i);
   });
 
   it("shows accept points for available missions and accepts nearest via tryAcceptNearby", () => {
@@ -91,7 +111,7 @@ describe("MissionManager", () => {
     expect(mgr.intro.status).toBe("available");
   });
 
-  it("steal-deliver succeeds after taking target vehicle to drop", () => {
+  it("steal-deliver succeeds after taking target vehicle to drop outside arrest range", () => {
     const mgr = new MissionManager(0, 0);
     unlock(mgr, "cab-boost");
     expect(mgr.accept("cab-boost", 1000)).toBe(true);
@@ -105,17 +125,69 @@ describe("MissionManager", () => {
     expect(mgr.active?.objective).toContain("Steal");
 
     const drop = mgr.missions.find((m) => m.def.id === "cab-boost")!.def.markers[0]!;
+    const spike = mgr.tick(
+      hooks({
+        inVehicle: true,
+        vehicleId: "veh-taxi",
+        vehicleHealth: 80,
+        playerX: drop.x - 200,
+        playerY: drop.y,
+        now: 1500,
+        inArrestRange: false,
+      }),
+    );
+    expect(spike?.stealHeat).toBe(true);
+
     const done = mgr.tick(
       hooks({
         inVehicle: true,
         vehicleId: "veh-taxi",
+        vehicleHealth: 80,
         playerX: drop.x,
         playerY: drop.y,
         now: 2000,
+        inArrestRange: false,
       }),
     );
     expect(done?.status).toBe("success");
     expect(done?.reward).toBe(180);
+  });
+
+  it("steal-deliver blocks drop while in arrest range", () => {
+    const mgr = new MissionManager(0, 0);
+    unlock(mgr, "cab-boost");
+    mgr.accept("cab-boost", 0);
+    const drop = mgr.missions.find((m) => m.def.id === "cab-boost")!.def.markers[0]!;
+    const blocked = mgr.tick(
+      hooks({
+        inVehicle: true,
+        vehicleId: "veh-taxi",
+        vehicleHealth: 90,
+        playerX: drop.x,
+        playerY: drop.y,
+        now: 500,
+        inArrestRange: true,
+      }),
+    );
+    expect(blocked?.status === "success").toBe(false);
+    expect(mgr.active?.def.id).toBe("cab-boost");
+    expect(mgr.active?.objective).toMatch(/arrest/i);
+  });
+
+  it("steal-deliver fails when cab health falls below floor", () => {
+    const mgr = new MissionManager(0, 0);
+    unlock(mgr, "cab-boost");
+    mgr.accept("cab-boost", 0);
+    const failed = mgr.tick(
+      hooks({
+        inVehicle: true,
+        vehicleId: "veh-taxi",
+        vehicleHealth: 10,
+        now: 200,
+      }),
+    );
+    expect(failed?.status).toBe("failed");
+    expect(mgr.missions.find((m) => m.def.id === "cab-boost")?.objective).toMatch(/wrecked/i);
   });
 
   it("steal-deliver fails when target vehicle is missing (no soft-lock)", () => {
@@ -152,28 +224,81 @@ describe("MissionManager", () => {
     expect(mgr.active?.objective).toMatch(/Raise heat/i);
   });
 
-  it("multi-stop completes all ordered markers", () => {
+  it("escape-heat decay multiplier boosts near park and slows on open road with cops", () => {
+    const mgr = new MissionManager(0, 0);
+    unlock(mgr, "cool-off");
+    mgr.accept("cool-off", 0);
+    expect(mgr.escapeDecayMultiplier({ nearSafehouse: true, nearPark: false, onOpenRoadWithCops: false })).toBeGreaterThan(1);
+    expect(mgr.escapeDecayMultiplier({ nearSafehouse: false, nearPark: true, onOpenRoadWithCops: false })).toBeGreaterThan(1);
+    expect(mgr.escapeDecayMultiplier({ nearSafehouse: false, nearPark: false, onOpenRoadWithCops: true })).toBeLessThan(1);
+  });
+
+  it("multi-stop completes mixed timed / vehicle / contested stops", () => {
     const mgr = new MissionManager(0, 0);
     unlock(mgr, "harbor-hops");
     mgr.accept("harbor-hops", 0);
     const hops = mgr.missions.find((m) => m.def.id === "harbor-hops")!;
-    for (let i = 0; i < hops.def.markers.length; i += 1) {
-      const marker = hops.def.markers[i]!;
-      const result = mgr.tick(
+    const [timed, vehicle, contested] = hops.def.markers;
+
+    expect(timed?.kind).toBe("timed");
+    expect(vehicle?.kind).toBe("vehicle");
+    expect(contested?.kind).toBe("contested");
+
+    expect(
+      mgr.tick(hooks({ playerX: timed!.x, playerY: timed!.y, now: 1000 })),
+    ).toBeNull();
+    expect(mgr.active?.markerIndex).toBe(1);
+
+    // Vehicle stop rejects on foot.
+    expect(
+      mgr.tick(
         hooks({
-          playerX: marker.x,
-          playerY: marker.y,
-          now: (i + 1) * 1000,
+          playerX: vehicle!.x,
+          playerY: vehicle!.y,
+          inVehicle: false,
+          now: 2000,
+        }),
+      ),
+    ).toBeNull();
+    expect(mgr.active?.markerIndex).toBe(1);
+
+    expect(
+      mgr.tick(
+        hooks({
+          playerX: vehicle!.x,
+          playerY: vehicle!.y,
+          inVehicle: true,
+          vehicleId: "veh-compact",
+          now: 2500,
+        }),
+      ),
+    ).toBeNull();
+    expect(mgr.active?.markerIndex).toBe(2);
+
+    // Contested hold needs time in zone.
+    let done = null;
+    for (let i = 0; i < 200; i += 1) {
+      done = mgr.tick(
+        hooks({
+          playerX: contested!.x,
+          playerY: contested!.y,
+          now: 3000 + i * 16,
+          dtMs: 16,
         }),
       );
-      if (i < hops.def.markers.length - 1) {
-        expect(result).toBeNull();
-        expect(mgr.active?.markerIndex).toBe(i + 1);
-      } else {
-        expect(result?.status).toBe("success");
-        expect(result?.reward).toBe(200);
-      }
+      if (done) break;
     }
+    expect(done?.status).toBe("success");
+    expect(done?.reward).toBe(200);
+  });
+
+  it("multi-stop timed stop fails when clock expires", () => {
+    const mgr = new MissionManager(0, 0);
+    unlock(mgr, "harbor-hops");
+    mgr.accept("harbor-hops", 0);
+    const failed = mgr.tick(hooks({ now: 60_000 }));
+    expect(failed?.status).toBe("failed");
+    expect(mgr.missions.find((m) => m.def.id === "harbor-hops")?.objective).toMatch(/timer/i);
   });
 
   it("destruction completes when target is gone with auto-complete message (no soft-lock)", () => {
@@ -188,14 +313,16 @@ describe("MissionManager", () => {
     );
     expect(done?.status).toBe("success");
     const dest = mgr.missions.find((m) => m.def.id === "crate-crack")!;
-    expect(dest.objective).toMatch(/already destroyed|auto-complete/i);
+    expect(dest.objective).toMatch(/already gone|soft-lock/i);
   });
 
-  it("destruction succeeds after target destroyed mid-mission", () => {
+  it("destruction succeeds after target destroyed mid-mission and reports smash heat", () => {
     const mgr = new MissionManager(0, 0);
     unlock(mgr, "crate-crack");
     mgr.accept("crate-crack", 0);
     expect(mgr.tick(hooks({ destroyTargetAlive: true, now: 100 }))).toBeNull();
+    const hit = mgr.tick(hooks({ destroyTargetAlive: true, crateDamaged: true, now: 400 }));
+    expect(hit?.smashHeat).toBe(true);
     const done = mgr.tick(hooks({ destroyTargetAlive: false, now: 500 }));
     expect(done?.status).toBe("success");
   });

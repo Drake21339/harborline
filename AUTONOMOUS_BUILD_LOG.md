@@ -358,3 +358,32 @@ Met. Non-blocking remaining limits: Phaser flats still interim (no 3D engine), m
 - Version history: `docs/VERSIONS.md` + tag `v0.1.0` + `scripts/play-version.sh`
 - Title screen shows `v0.1.0`
 - Includes keyboard-first controls, polish AFK prompts, art-direction pin
+
+---
+
+## 2026-07-20 — Finish F1 Mission soul (green)
+
+Five jobs feel distinct by play — not “E → circle → cash” only:
+
+| Mission | Distinct verb / fail drama |
+|---|---|
+| Pier Packet (courier) | Hot parcel: pick up → carry (PARCEL tag) → drop only while carrying; damage/arrest drops it; 90s clock |
+| Yellow Line (steal_deliver) | Steal cab spikes heat; HP floor (≥35) or fail; drop blocked in arrest range |
+| Cool Off (escape_heat) | Must raise then clear heat; decay ×1.85 near safehouse/park, ×0.45 open road + cops |
+| Harbor Hops (multi_stop) | Mixed stops: timed / vehicle-required / contested hold (not three identical circles) |
+| Crate Crack (destruction) | Ram or shoot; smash raises heat; soft-lock if already gone with clear message |
+
+- Unit success paths for all five types; meaningful fail paths on courier (damage/arrest/timeout), steal (HP floor / missing / arrest gate), multi (timed miss).
+- `__GAME_DEBUG__.mission.id/objective` stay truthful; e2e still accepts intro + ≥2 non-intro missions.
+
+### Verification (observed)
+
+```text
+npm run check → typecheck OK, lint OK
+npm run test → 46 passed (16 mission + 5 heat)
+npm run test:e2e → 1 passed ~2.0s (intro + cab-boost + cool-off + vehicle + pause + refresh)
+```
+
+### Next phase (Finish F2)
+
+City + drive + combat depth.
