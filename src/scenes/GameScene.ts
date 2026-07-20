@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { COLORS, GAME_WIDTH, PLAYER, WORLD_SEED } from "../config/gameConfig";
+import { COLORS, GAME_HEIGHT, GAME_WIDTH, PLAYER, WORLD_SEED } from "../config/gameConfig";
 import { COMBAT } from "../systems/combatTypes";
 import { patchDebugSnapshot } from "../systems/debugSnapshot";
 import {
@@ -254,13 +254,24 @@ export class GameScene extends Phaser.Scene {
       this.input.removeAllListeners();
     });
 
+    // Left HUD chrome — late-90s arcade stack, not SaaS cards.
     this.add
-      .text(12, 10, "WASD · E · F/J fire · Space brake · M map · P pause · H help", {
+      .rectangle(8, 8, 430, 158, 0x0a121c, 0.72)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(99)
+      .setStrokeStyle(1, 0xc8b84a, 0.35);
+    this.add
+      .rectangle(8, 8, 430, 3, 0xc8b84a, 0.7)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(99);
+
+    this.add
+      .text(16, 14, "WASD · E · F/J fire · Space brake · M map · P pause · H help", {
         fontFamily: "monospace",
         fontSize: "12px",
         color: COLORS.uiMuted,
-        backgroundColor: "#00000099",
-        padding: { x: 8, y: 4 },
       })
       .setScrollFactor(0)
       .setDepth(100);
@@ -268,23 +279,19 @@ export class GameScene extends Phaser.Scene {
     this.buildPauseAndHelp();
 
     this.hudText = this.add
-      .text(12, 36, "", {
+      .text(16, 36, "", {
         fontFamily: "monospace",
-        fontSize: "14px",
+        fontSize: "15px",
         color: COLORS.uiText,
-        backgroundColor: "#00000099",
-        padding: { x: 8, y: 5 },
       })
       .setScrollFactor(0)
       .setDepth(100);
 
     this.heatHud = this.add
-      .text(12, 66, "", {
+      .text(16, 60, "", {
         fontFamily: "monospace",
-        fontSize: "14px",
+        fontSize: "15px",
         color: "#ffb4b4",
-        backgroundColor: "#00000099",
-        padding: { x: 8, y: 5 },
       })
       .setScrollFactor(0)
       .setDepth(100);
@@ -621,19 +628,31 @@ export class GameScene extends Phaser.Scene {
 
   private buildPauseAndHelp(): void {
     const mkPanel = (lines: string[]): Phaser.GameObjects.Container => {
+      const dim = this.add
+        .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x040810, 0.55)
+        .setScrollFactor(0);
       const bg = this.add
-        .rectangle(GAME_WIDTH / 2, 360, 640, 420, 0x0b1220, 0.92)
+        .rectangle(GAME_WIDTH / 2, 360, 620, 400, 0x0c1826, 0.94)
+        .setScrollFactor(0)
+        .setStrokeStyle(2, 0xc8b84a, 0.55);
+      const rule = this.add
+        .rectangle(GAME_WIDTH / 2, 210, 520, 2, 0xc8b84a, 0.5)
         .setScrollFactor(0);
       const text = this.add
         .text(GAME_WIDTH / 2, 360, lines.join("\n"), {
           fontFamily: "monospace",
-          fontSize: "16px",
+          fontSize: "17px",
           color: COLORS.uiText,
           align: "center",
+          lineSpacing: 6,
         })
         .setOrigin(0.5)
         .setScrollFactor(0);
-      return this.add.container(0, 0, [bg, text]).setDepth(200).setScrollFactor(0).setVisible(false);
+      return this.add
+        .container(0, 0, [dim, bg, rule, text])
+        .setDepth(200)
+        .setScrollFactor(0)
+        .setVisible(false);
     };
 
     this.pausePanel = mkPanel([""]);
@@ -642,27 +661,27 @@ export class GameScene extends Phaser.Scene {
       "",
       "WASD / Arrows — move or drive",
       "Shift — sprint   Space — handbrake",
-      "E — enter/exit / accept available missions near markers",
-      "Aim: mouse if moved, else face walk direction",
-      "Fire: hold F or J (keyboard) or LMB (mouse)",
+      "E — enter/exit / accept missions near markers",
+      "Aim — mouse if moved, else face walk direction",
+      "Fire — hold F or J (keyboard) or LMB (mouse)",
       "M — expand map   R — safehouse respawn",
       "P / Esc — pause   F1 / H — help",
       "",
       "Fully playable without a mouse",
-      "P/Esc again resumes",
+      "H / F1 again closes help",
     ]);
     this.refreshPauseText();
   }
 
   private refreshPauseText(): void {
-    const text = this.pausePanel.list[1] as Phaser.GameObjects.Text;
+    const text = this.pausePanel.list[3] as Phaser.GameObjects.Text;
     text.setText(
       [
         "PAUSED",
         "",
-        `[ ] master ${this.save.masterVolume.toFixed(1)}`,
-        `; ' sfx ${this.save.sfxVolume.toFixed(1)}`,
-        `, . ambience ${this.save.ambienceVolume.toFixed(1)}`,
+        `[ ] master  ${this.save.masterVolume.toFixed(1)}`,
+        `; '  sfx    ${this.save.sfxVolume.toFixed(1)}`,
+        `, .  ambience ${this.save.ambienceVolume.toFixed(1)}`,
         "",
         "X — reset save",
         "P / Esc — resume",

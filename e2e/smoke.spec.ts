@@ -30,7 +30,23 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
     timeout: 10_000,
   });
   await page.screenshot({ path: "test-results/game-hud.png", fullPage: true });
+  await page.screenshot({ path: "test-results/finish/game-hud-1.png", fullPage: true });
   await page.screenshot({ path: "test-results/finish/world-midstack-3.png", fullPage: true });
+
+  await page.keyboard.press("m");
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: "test-results/finish/minimap-expanded-2.png", fullPage: true });
+  await page.keyboard.press("m");
+
+  await page.keyboard.press("p");
+  await page.waitForTimeout(120);
+  await page.screenshot({ path: "test-results/finish/pause-1.png", fullPage: true });
+  await page.keyboard.press("p");
+
+  await page.keyboard.press("h");
+  await page.waitForTimeout(120);
+  await page.screenshot({ path: "test-results/finish/help-1.png", fullPage: true });
+  await page.keyboard.press("h");
 
   const before = await page.evaluate(() => {
     const d = window.__GAME_DEBUG__;

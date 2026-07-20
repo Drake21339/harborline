@@ -435,3 +435,28 @@ npm run test:e2e → 1 passed ~2.3s (finish screenshots written)
 ### Next phase (Finish F4)
 
 Art-director HUD / UI / minimap / pause / help.
+
+---
+
+## 2026-07-20 — Finish F4 Art-director HUD/UI/minimap/pause/help (green)
+
+Art-director loop budgets: HUD×1, minimap×2, pause×1, help×1.
+
+| Surface | Verdict | Evidence |
+|---|---|---|
+| game-hud | **PASS** | `test-results/finish/game-hud-1.png` — left chrome stack: controls, HP/ammo/cash/score, heat, mission accept/obj; gold rule; no purple glow |
+| minimap-expanded | **PASS** | `test-results/finish/minimap-expanded-2.png` — roads/water/park/buildings + player triangle; brighter paint after iter 2 |
+| pause | **PASS** | `test-results/finish/pause-1.png` — dim + gold-border panel; volume keys + reset + resume truthful |
+| help | **PASS** | `test-results/finish/help-1.png` — keyboard-first controls match real bindings |
+
+### Verification (observed)
+
+```text
+npm run check → typecheck OK, lint OK
+npm run test → 47 passed
+npm run test:e2e → 1 passed ~2.9s (HUD/minimap/pause/help screenshots)
+```
+
+### Next phase (Finish F5)
+
+Audio productize + Suno slots.

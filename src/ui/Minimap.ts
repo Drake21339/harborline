@@ -21,11 +21,11 @@ export class Minimap {
     private readonly world: GeneratedWorld,
   ) {
     this.frame = scene.add
-      .rectangle(0, 0, this.miniSize + 6, this.miniSize + 6, 0x000000, 0.65)
+      .rectangle(0, 0, this.miniSize + 8, this.miniSize + 8, 0x0a121c, 0.82)
       .setScrollFactor(0)
       .setDepth(110)
       .setOrigin(1, 0)
-      .setStrokeStyle(1, 0x7dffa8, 0.35);
+      .setStrokeStyle(2, 0xc8b84a, 0.55);
     this.base = scene.add
       .renderTexture(0, 0, this.expandSize, this.expandSize)
       .setScrollFactor(0)
@@ -78,14 +78,14 @@ export class Minimap {
     const scale = size / worldPx;
 
     for (const m of markers) {
-      this.g.fillStyle(0x7dffa8, 1);
-      this.g.fillCircle(left + m.x * scale, top + m.y * scale, this.expanded ? 5 : 4);
-      this.g.lineStyle(1, 0xffffff, 0.7);
-      this.g.strokeCircle(left + m.x * scale, top + m.y * scale, this.expanded ? 7 : 5);
+      this.g.fillStyle(0x9ef0c0, 1);
+      this.g.fillCircle(left + m.x * scale, top + m.y * scale, this.expanded ? 6 : 4);
+      this.g.lineStyle(1, 0xffffff, 0.85);
+      this.g.strokeCircle(left + m.x * scale, top + m.y * scale, this.expanded ? 8 : 6);
     }
     for (const p of police) {
-      this.g.fillStyle(0x4a6cff, 1);
-      this.g.fillCircle(left + p.x * scale, top + p.y * scale, this.expanded ? 4 : 3);
+      this.g.fillStyle(0xff5555, 1);
+      this.g.fillCircle(left + p.x * scale, top + p.y * scale, this.expanded ? 5 : 3.5);
     }
 
     const px = left + playerX * scale;
@@ -103,7 +103,7 @@ export class Minimap {
 
   private repaintBase(size: number): void {
     const g = this.base.scene.make.graphics({ x: 0, y: 0 }, false);
-    g.fillStyle(0x121c2a, 0.92);
+    g.fillStyle(0x0c1826, 0.96);
     g.fillRect(0, 0, size, size);
 
     const worldPx = this.world.width * this.world.tileSize;
@@ -115,15 +115,22 @@ export class Minimap {
         const t = tileAt(this.world, tx, ty);
         const x = tx * this.world.tileSize * scale;
         const y = ty * this.world.tileSize * scale;
+        const cell = this.expanded ? 3.2 : 2.4;
         if (t === Tile.Water) {
-          g.fillStyle(0x2a4a6a, 1);
-          g.fillRect(x, y, 2, 2);
+          g.fillStyle(0x2a6a9a, 1);
+          g.fillRect(x, y, cell, cell);
         } else if (t === Tile.Park || t === Tile.Grass) {
-          g.fillStyle(0x2f5a36, 0.7);
-          g.fillRect(x, y, 2, 2);
+          g.fillStyle(0x3a8a44, 1);
+          g.fillRect(x, y, cell, cell);
         } else if (t === Tile.Road) {
-          g.fillStyle(0x6a7080, 1);
-          g.fillRect(x, y, 2.5, 2.5);
+          g.fillStyle(0xc8ced8, 1);
+          g.fillRect(x, y, cell + 0.4, cell + 0.4);
+        } else if (t === Tile.Building) {
+          g.fillStyle(0x5a4a38, 0.75);
+          g.fillRect(x, y, cell * 0.85, cell * 0.85);
+        } else if (t === Tile.Plaza || t === Tile.Sidewalk) {
+          g.fillStyle(0x6a7080, 0.7);
+          g.fillRect(x, y, cell * 0.9, cell * 0.9);
         }
       }
     }
