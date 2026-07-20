@@ -550,3 +550,30 @@ npm run test:e2e → 1 passed ~46s (beauty midstack/pier/freeway screenshots)
 ### Next phase (Beauty G2)
 
 Vehicles + people silhouettes + paint tint on 3D meshes.
+
+---
+
+## 2026-07-20 — Graphics Beauty G2 Vehicles + people silhouettes (green)
+
+Richer `makeVehicleMesh` / `makePersonMesh` in `WorldRenderer3D`; archetype + police foot/car poses; paint tint sync via `applyPoseTint`.
+
+Art-director loop: vehicles-fleet×2, ped-crowd×1, police×1, paint×1.
+
+| Surface | Verdict | Evidence | Notes |
+|---|---|---|---|
+| vehicles-fleet | **PASS** (soft leftover) | `test-results/beauty/vehicles-fleet-2.png` | Cabin/glass/wheels/lights; six archetype colors glanceable |
+| ped-crowd | **PASS** (soft leftover) | `test-results/beauty/ped-crowd-1.png` | Head+shoulder capsules read as people vs cars |
+| police-chase | **PASS** | `test-results/beauty/police-chase-1.png` | Patrol light-bar + stripe on fleet police car |
+| paint tint | **PASS** | e2e `paintNearest(0x9ef0c0)` → bodyColor match + `vehicles-paint-1.png` | Mesh material follows paintColors map |
+
+### Verification (observed)
+
+```text
+npm run check → typecheck OK, lint OK
+npm run test → 60 passed
+npm run test:e2e → 1 passed ~1.0m (paint assert + beauty screenshots)
+```
+
+### Next phase (Beauty G3)
+
+Light, atmosphere, title brand.

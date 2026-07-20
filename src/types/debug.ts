@@ -27,6 +27,10 @@ export interface HarborTestHooks {
   sfxKinds: () => string[];
   moveNearPickup: () => void;
   musicBedsReady: () => { title: boolean; city: boolean; heat: boolean; active: string | null };
+  /** Paint nearest fleet vehicle; returns new body color hex. */
+  paintNearest: (color: number) => number | null;
+  vehicleBodyColor: (id?: string) => number | null;
+  bumpHeat: (level: number) => void;
 }
 
 declare global {

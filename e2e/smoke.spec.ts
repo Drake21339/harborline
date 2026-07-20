@@ -195,7 +195,39 @@ test("boots, starts, moves, mission, and enter/drive/exit vehicle", async ({ pag
   });
   await page.waitForTimeout(150);
   await page.screenshot({ path: "test-results/finish/vehicle-fleet-close-2.png", fullPage: true });
-  await page.screenshot({ path: "test-results/beauty/vehicle-fleet-close-1.png", fullPage: true });
+  await page.screenshot({ path: "test-results/beauty/vehicles-fleet-1.png", fullPage: true });
+  await page.screenshot({ path: "test-results/beauty/vehicles-fleet-2.png", fullPage: true });
+  // Paint tint must update vehicle body color (feeds 3D mesh material).
+  const painted = await page.evaluate(() => {
+    const t = window.__HARBOR_TEST__;
+    if (!t) throw new Error("missing test hooks");
+    t.moveNearFleet();
+    const before = t.vehicleBodyColor() ?? 0;
+    const after = t.paintNearest(0x9ef0c0);
+    return { before, after };
+  });
+  expect(painted.after).toBe(0x9ef0c0);
+  expect(painted.after).not.toBe(painted.before);
+  await page.waitForTimeout(100);
+  await page.screenshot({ path: "test-results/beauty/vehicles-paint-1.png", fullPage: true });
+  // Ped crowd mid-zoom.
+  await page.evaluate(() => {
+    window.__HARBOR_TEST__?.setZoom(1.15);
+  });
+  await page.waitForTimeout(120);
+  await page.screenshot({ path: "test-results/beauty/ped-crowd-1.png", fullPage: true });
+  // Police silhouette via parked Patrol archetype in spawn fleet (no heat — avoids arrest).
+  await page.evaluate(() => {
+    const t = window.__HARBOR_TEST__;
+    if (!t) throw new Error("missing test hooks");
+    t.moveNearFleet();
+    t.setZoom(1.5);
+  });
+  await page.waitForTimeout(120);
+  await page.screenshot({ path: "test-results/beauty/police-chase-1.png", fullPage: true });
+  await page.evaluate(() => {
+    window.__HARBOR_TEST__?.setZoom(1);
+  });
 
   await page.evaluate(() => {
     window.__HARBOR_TEST__?.setZoom(0.28);

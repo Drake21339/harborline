@@ -13,6 +13,8 @@ export interface EntityPose3D {
   width?: number;
   height?: number;
   fleeing?: boolean;
+  /** Vehicle archetype id for silhouette variety (compact/sedan/…). */
+  archetype?: string;
 }
 
 type DistrictId = "pier-ward" | "midstack" | "ridge-hollow" | "freight-cut" | "greenbelt";
@@ -184,29 +186,23 @@ export class WorldRenderer3D {
     for (const p of poses) {
       seen.add(p.id);
       let obj = this.meshes.get(p.id);
+      const key = `${p.kind}:${p.archetype ?? ""}:${p.width ?? 0}x${p.height ?? 0}`;
+      if (obj && obj.userData.meshKey !== key) {
+        this.entityRoot.remove(obj);
+        this.disposeObject(obj);
+        this.meshes.delete(p.id);
+        obj = undefined;
+      }
       if (!obj) {
         obj = this.makeEntityMesh(p);
+        obj.userData.meshKey = key;
         this.entityRoot.add(obj);
         this.meshes.set(p.id, obj);
       }
-      obj.position.set(p.x, p.kind === "ped" || p.kind === "player" ? 8 : 6, p.y);
+      const lift = p.kind === "ped" || p.kind === "player" ? 9 : 5;
+      obj.position.set(p.x, lift, p.y);
       obj.rotation.y = -p.heading;
-      if (p.color !== undefined && obj instanceof THREE.Mesh) {
-        const mat = obj.material as THREE.MeshStandardMaterial;
-        mat.color.setHex(p.fleeing ? 0xff7a33 : p.color);
-      } else if (obj instanceof THREE.Group) {
-        const body = obj.userData.body as THREE.Mesh | undefined;
-        if (body && p.color !== undefined) {
-          const mat = body.material as THREE.MeshStandardMaterial;
-          mat.color.setHex(p.fleeing ? 0xff7a33 : p.color);
-        } else if (p.fleeing) {
-          obj.traverse((c) => {
-            if (c instanceof THREE.Mesh && c.userData.tintable) {
-              (c.material as THREE.MeshStandardMaterial).color.setHex(0xff7a33);
-            }
-          });
-        }
-      }
+      this.applyPoseTint(obj, p);
     }
     for (const [id, obj] of this.meshes) {
       if (!seen.has(id)) {
@@ -215,6 +211,15 @@ export class WorldRenderer3D {
         this.meshes.delete(id);
       }
     }
+  }
+
+  private applyPoseTint(obj: THREE.Object3D, p: EntityPose3D): void {
+    const tint = p.fleeing ? 0xff7a33 : (p.color ?? 0xf2c14e);
+    obj.traverse((c) => {
+      if (!(c instanceof THREE.Mesh) || !c.userData.tintable) return;
+      const mat = c.material as THREE.MeshStandardMaterial;
+      mat.color.setHex(tint);
+    });
   }
 
   render(): void {
@@ -485,32 +490,198 @@ export class WorldRenderer3D {
   }
 
   private makeEntityMesh(p: EntityPose3D): THREE.Object3D {
-    const color = p.color ?? 0xf2c14e;
-    if (p.kind === "ped" || p.kind === "player") {
-      const body = new THREE.Mesh(
-        new THREE.CapsuleGeometry(5, 8, 4, 8),
-        new THREE.MeshStandardMaterial({ color, roughness: 0.7 }),
-      );
-      body.position.y = 0;
-      body.userData.tintable = true;
-      return body;
+    if (p.kind === "ped" || p.kind === "player" || (p.kind === "police" && !p.width)) {
+      return this.makePersonMesh(p);
     }
-    const w = p.width ?? 48;
-    const h = p.height ?? 24;
+    return this.makeVehicleMesh(p);
+  }
+
+  private makePersonMesh(p: EntityPose3D): THREE.Object3D {
+    const color = p.color ?? 0xb8c4a8;
     const group = new THREE.Group();
-    const chassis = new THREE.Mesh(
-      new THREE.BoxGeometry(w, 8, h),
-      new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.2 }),
+    const isPlayer = p.kind === "player";
+    const isCop = p.kind === "police";
+    const bodyColor = isCop ? 0x2a4a9a : color;
+    const body = new THREE.Mesh(
+      new THREE.CapsuleGeometry(isPlayer ? 5.5 : 4.5, isPlayer ? 9 : 7, 4, 8),
+      new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.65 }),
     );
-    chassis.position.y = 4;
+    body.position.y = 2;
+    body.userData.tintable = true;
+    const head = new THREE.Mesh(
+      new THREE.SphereGeometry(isPlayer ? 3.2 : 2.8, 8, 6),
+      new THREE.MeshStandardMaterial({
+        color: isCop ? 0xd0b090 : 0xe0c8a8,
+        roughness: 0.7,
+      }),
+    );
+    head.position.y = isPlayer ? 12 : 10;
+    // Facing cue — small nose/shoulder bias toward heading (+X local after rotation).
+    const shoulder = new THREE.Mesh(
+      new THREE.BoxGeometry(isPlayer ? 12 : 10, 3, 4),
+      new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.7 }),
+    );
+    shoulder.position.set(0, 6, 0);
+    shoulder.userData.tintable = true;
+    const shadow = new THREE.Mesh(
+      new THREE.CircleGeometry(6, 10),
+      new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35 }),
+    );
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.y = -8;
+    group.add(shadow, body, head, shoulder);
+    if (isCop) {
+      const hat = new THREE.Mesh(
+        new THREE.CylinderGeometry(3.2, 3.4, 2.2, 8),
+        new THREE.MeshStandardMaterial({ color: 0x1a2a60, roughness: 0.6 }),
+      );
+      hat.position.y = 13.5;
+      group.add(hat);
+    }
+    if (isPlayer) {
+      const marker = new THREE.Mesh(
+        new THREE.ConeGeometry(3, 5, 4),
+        new THREE.MeshStandardMaterial({ color: 0xffe08a, emissive: 0xaa8800, emissiveIntensity: 0.5 }),
+      );
+      marker.position.set(6, 4, 0);
+      marker.rotation.z = -Math.PI / 2;
+      group.add(marker);
+    }
+    group.userData.body = body;
+    return group;
+  }
+
+  private makeVehicleMesh(p: EntityPose3D): THREE.Object3D {
+    const color = p.color ?? 0x9aa3b5;
+    const arch = p.archetype ?? (p.kind === "police" ? "police" : "sedan");
+    let w = p.width ?? 48;
+    let h = p.height ?? 24;
+    let bodyH = 7;
+    let cabinH = 6;
+    let cabinScaleX = 0.48;
+    const cabinZ = 0.72;
+    if (arch === "compact") {
+      w *= 0.95;
+      bodyH = 6.5;
+      cabinScaleX = 0.42;
+    } else if (arch === "sports") {
+      bodyH = 5.5;
+      cabinH = 4.5;
+      cabinScaleX = 0.4;
+      h *= 0.95;
+    } else if (arch === "van") {
+      bodyH = 10;
+      cabinH = 9;
+      cabinScaleX = 0.55;
+    } else if (arch === "taxi") {
+      bodyH = 7.5;
+    } else if (arch === "police") {
+      bodyH = 7.5;
+    }
+
+    const group = new THREE.Group();
+    const shadow = new THREE.Mesh(
+      new THREE.PlaneGeometry(w * 1.05, h * 1.1),
+      new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.4 }),
+    );
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.set(2, -4.5, 3);
+
+    const chassis = new THREE.Mesh(
+      new THREE.BoxGeometry(w, bodyH, h),
+      new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.25 }),
+    );
+    chassis.position.y = bodyH / 2 - 2;
     chassis.userData.tintable = true;
     group.userData.body = chassis;
-    const cabin = new THREE.Mesh(
-      new THREE.BoxGeometry(w * 0.45, 6, h * 0.7),
-      new THREE.MeshStandardMaterial({ color: 0x1a2430, roughness: 0.4 }),
+
+    const glass = new THREE.Mesh(
+      new THREE.BoxGeometry(w * cabinScaleX, cabinH, h * cabinZ),
+      new THREE.MeshStandardMaterial({
+        color: 0x1a3048,
+        roughness: 0.25,
+        metalness: 0.35,
+        emissive: 0x102030,
+        emissiveIntensity: 0.2,
+      }),
     );
-    cabin.position.set(-w * 0.05, 10, 0);
-    group.add(chassis, cabin);
+    glass.position.set(-w * 0.06, bodyH / 2 + cabinH / 2 - 1.5, 0);
+
+    // Wheels — four dark discs for silhouette from above.
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.9 });
+    const wheelGeo = new THREE.CylinderGeometry(2.4, 2.4, 3.2, 8);
+    const wheelOffsets: Array<[number, number]> = [
+      [w * 0.32, h * 0.42],
+      [w * 0.32, -h * 0.42],
+      [-w * 0.32, h * 0.42],
+      [-w * 0.32, -h * 0.42],
+    ];
+    for (const [wx, wz] of wheelOffsets) {
+      const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+      wheel.rotation.z = Math.PI / 2;
+      wheel.position.set(wx, -1.5, wz);
+      group.add(wheel);
+    }
+
+    // Headlights + brake.
+    const hl = new THREE.Mesh(
+      new THREE.BoxGeometry(3, 2.5, 4),
+      new THREE.MeshStandardMaterial({
+        color: 0xfff2c0,
+        emissive: 0xffe080,
+        emissiveIntensity: 0.9,
+      }),
+    );
+    hl.position.set(w * 0.42, 2, 0);
+    const brake = new THREE.Mesh(
+      new THREE.BoxGeometry(2.5, 2, 8),
+      new THREE.MeshStandardMaterial({
+        color: 0xaa2020,
+        emissive: 0x661010,
+        emissiveIntensity: 0.4,
+      }),
+    );
+    brake.position.set(-w * 0.42, 2.2, 0);
+
+    group.add(shadow, chassis, glass, hl, brake);
+
+    if (arch === "police") {
+      const bar = new THREE.Mesh(
+        new THREE.BoxGeometry(w * 0.35, 2.5, h * 0.55),
+        new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          emissive: 0x2244ff,
+          emissiveIntensity: 0.85,
+        }),
+      );
+      bar.position.set(0, bodyH / 2 + cabinH - 0.5, 0);
+      const stripe = new THREE.Mesh(
+        new THREE.BoxGeometry(w * 0.98, 1.2, h * 0.15),
+        new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 }),
+      );
+      stripe.position.set(0, bodyH / 2 - 1, 0);
+      group.add(bar, stripe);
+    }
+    if (arch === "taxi") {
+      const sign = new THREE.Mesh(
+        new THREE.BoxGeometry(10, 3, 6),
+        new THREE.MeshStandardMaterial({
+          color: 0xf0c040,
+          emissive: 0xaa8800,
+          emissiveIntensity: 0.5,
+        }),
+      );
+      sign.position.set(0, bodyH / 2 + cabinH + 0.5, 0);
+      group.add(sign);
+    }
+    if (arch === "sports") {
+      const scoop = new THREE.Mesh(
+        new THREE.BoxGeometry(w * 0.25, 1.5, h * 0.35),
+        new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.5 }),
+      );
+      scoop.position.set(w * 0.1, bodyH / 2 + 0.5, 0);
+      group.add(scoop);
+    }
     return group;
   }
 

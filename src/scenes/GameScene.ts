@@ -950,17 +950,30 @@ export class GameScene extends Phaser.Scene {
         color: this.vehicles.bodyColor(v.state.id),
         width: v.def.width,
         height: v.def.height,
+        archetype: v.def.id,
       })),
-      ...this.police.positions.map((p, i) => ({
-        id: `cop-${i}`,
-        x: p.x,
-        y: p.y,
-        heading: 0,
-        kind: "police" as const,
-        color: 0x3a5cff,
-        width: 52,
-        height: 26,
-      })),
+      ...this.police.positions.map((p, i) =>
+        p.inCar
+          ? {
+              id: `cop-${i}`,
+              x: p.x,
+              y: p.y,
+              heading: p.heading,
+              kind: "police" as const,
+              color: 0x3a5cff,
+              width: 52,
+              height: 26,
+              archetype: "police",
+            }
+          : {
+              id: `cop-${i}`,
+              x: p.x,
+              y: p.y,
+              heading: p.heading,
+              kind: "police" as const,
+              color: 0x3a5cff,
+            },
+      ),
     ];
     this.world3d.syncEntities(poses);
     this.world3d.render();
@@ -1209,6 +1222,24 @@ export class GameScene extends Phaser.Scene {
         heat: audioBus.bedFileReady("heat"),
         active: audioBus.activeBed,
       }),
+      paintNearest: (color: number) => {
+        const id = this.vehicles.paintActiveOrNearest(this.player.x, this.player.y, color);
+        if (!id) return null;
+        this.syncWorld3d();
+        return this.vehicles.bodyColor(id);
+      },
+      vehicleBodyColor: (id?: string) => {
+        const target = id ?? this.vehicles.vehicles[0]?.state.id;
+        if (!target) return null;
+        return this.vehicles.bodyColor(target);
+      },
+      bumpHeat: (level: number) => {
+        this.heat.level = Math.max(0, Math.min(5, level));
+        this.heat.lastOffenseAt = this.time.now;
+        this.police.update(this.heat.level, this.player.x, this.player.y, 0.016, this.time.now);
+        this.syncWorld3d();
+        this.publishDebug();
+      },
     };
   }
 }
