@@ -4,7 +4,7 @@ Clean-room top-down urban action sandbox for the browser. Original city, charact
 
 **No Rockstar / DMA Design IP** (maps, names, logos, sprites, music, dialogue, or source) is included.
 
-**Presentation:** **top-down 3D** via Phaser + Three.js (locked bird’s-eye camera) — see [`docs/ART-DIRECTION.md`](docs/ART-DIRECTION.md) and [`docs/ADR-009-TOP-DOWN-3D.md`](docs/ADR-009-TOP-DOWN-3D.md).
+**Presentation:** **HD top-down pixel** in Phaser (locked bird’s-eye camera) — see [`docs/ART-DIRECTION.md`](docs/ART-DIRECTION.md) and [`docs/ADR-010-HD-TOP-DOWN-PIXEL.md`](docs/ADR-010-HD-TOP-DOWN-PIXEL.md).
 
 Pinned defaults: title **Harborline**, seed `harborline-1997`, tile **32px**, city **128×128**.
 

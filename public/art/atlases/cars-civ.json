@@ -1,0 +1,80 @@
+{
+  "image": "cars-civ.png",
+  "frameWidth": 516,
+  "frameHeight": 282,
+  "pad": 8,
+  "cols": 5,
+  "rows": 2,
+  "frames": [
+    {
+      "name": "compact",
+      "role": "civilian",
+      "index": 0,
+      "col": 0,
+      "row": 0
+    },
+    {
+      "name": "taxi",
+      "role": "civilian",
+      "index": 1,
+      "col": 1,
+      "row": 0
+    },
+    {
+      "name": "sports",
+      "role": "civilian",
+      "index": 2,
+      "col": 2,
+      "row": 0
+    },
+    {
+      "name": "van",
+      "role": "civilian",
+      "index": 3,
+      "col": 3,
+      "row": 0
+    },
+    {
+      "name": "pickup",
+      "role": "civilian",
+      "index": 4,
+      "col": 4,
+      "row": 0
+    },
+    {
+      "name": "muscle",
+      "role": "civilian",
+      "index": 5,
+      "col": 0,
+      "row": 1
+    },
+    {
+      "name": "orange",
+      "role": "civilian",
+      "index": 6,
+      "col": 1,
+      "row": 1
+    },
+    {
+      "name": "service",
+      "role": "civilian",
+      "index": 7,
+      "col": 2,
+      "row": 1
+    },
+    {
+      "name": "luxury",
+      "role": "civilian",
+      "index": 8,
+      "col": 3,
+      "row": 1
+    },
+    {
+      "name": "wagon",
+      "role": "civilian",
+      "index": 9,
+      "col": 4,
+      "row": 1
+    }
+  ]
+}

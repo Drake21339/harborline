@@ -1,0 +1,80 @@
+{
+  "image": "cars-emergency.png",
+  "frameWidth": 516,
+  "frameHeight": 282,
+  "pad": 8,
+  "cols": 5,
+  "rows": 2,
+  "frames": [
+    {
+      "name": "ladder",
+      "role": "emergency",
+      "index": 0,
+      "col": 0,
+      "row": 0
+    },
+    {
+      "name": "pumper-a",
+      "role": "emergency",
+      "index": 1,
+      "col": 1,
+      "row": 0
+    },
+    {
+      "name": "pumper-b",
+      "role": "emergency",
+      "index": 2,
+      "col": 2,
+      "row": 0
+    },
+    {
+      "name": "ladder-b",
+      "role": "emergency",
+      "index": 3,
+      "col": 3,
+      "row": 0
+    },
+    {
+      "name": "rescue-box",
+      "role": "emergency",
+      "index": 4,
+      "col": 4,
+      "row": 0
+    },
+    {
+      "name": "command-suv",
+      "role": "emergency",
+      "index": 5,
+      "col": 0,
+      "row": 1
+    },
+    {
+      "name": "ambulance",
+      "role": "emergency",
+      "index": 6,
+      "col": 1,
+      "row": 1
+    },
+    {
+      "name": "tanker",
+      "role": "emergency",
+      "index": 7,
+      "col": 2,
+      "row": 1
+    },
+    {
+      "name": "utility",
+      "role": "emergency",
+      "index": 8,
+      "col": 3,
+      "row": 1
+    },
+    {
+      "name": "brush",
+      "role": "emergency",
+      "index": 9,
+      "col": 4,
+      "row": 1
+    }
+  ]
+}

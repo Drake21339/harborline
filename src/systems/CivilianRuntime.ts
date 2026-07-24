@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { PIXEL_ATLAS, TRAFFIC_FRAMES } from "../art/pixelAtlases";
 import { SeededRng } from "../config/seededRng";
 import type { NavEdge } from "../world/navGraph";
 import { nearestNode, pickOutgoingEdge } from "../world/navGraph";
@@ -8,7 +9,7 @@ import { graphCivilianStep } from "./civilianMove";
 
 interface Agent {
   id: string;
-  view: Phaser.GameObjects.Rectangle;
+  view: Phaser.GameObjects.Image;
   x: number;
   y: number;
   heading: number;
@@ -19,6 +20,7 @@ interface Agent {
   edge: NavEdge | null;
   t: number;
   destNodeId: number | null;
+  frame: number;
 }
 
 export class CivilianRuntime {
@@ -52,7 +54,6 @@ export class CivilianRuntime {
     };
   }
 
-  /** Active agent poses for 3D sync / debug. */
   get poses(): Array<{
     id: string;
     x: number;
@@ -162,7 +163,7 @@ export class CivilianRuntime {
     }
 
     a.view.setPosition(a.x, a.y);
-    a.view.setRotation(a.kind === "car" ? a.heading : 0);
+    a.view.setRotation(a.kind === "car" ? a.heading : a.heading * 0.15);
     if (!this.overlayVisible) {
       a.view.setAlpha(0);
       a.wasFleeing = fleeing;
@@ -170,7 +171,7 @@ export class CivilianRuntime {
     }
     if (fleeing) {
       const pulse = 0.75 + 0.25 * Math.sin(now / 70);
-      a.view.setFillStyle(0xff7a33);
+      a.view.setTint(0xff7a33);
       a.view.setAlpha(pulse);
       a.view.setScale(a.kind === "car" ? 1.08 : 1.2);
       if (!a.wasFleeing) {
@@ -184,7 +185,7 @@ export class CivilianRuntime {
         });
       }
     } else {
-      a.view.setFillStyle(a.kind === "car" ? 0x9aa3b5 : 0xb8c4a8);
+      a.view.clearTint();
       a.view.setAlpha(1);
       a.view.setScale(1);
     }
@@ -226,7 +227,6 @@ export class CivilianRuntime {
       const tt = this.rng.next();
       const x = from.x + (to.x - from.x) * tt;
       const y = from.y + (to.y - from.y) * tt;
-      // Keep spawns off the map rim.
       const worldW = this.world.width * this.world.tileSize;
       const worldH = this.world.height * this.world.tileSize;
       if (x < 64 || y < 64 || x > worldW - 64 || y > worldH - 64) continue;
@@ -241,11 +241,12 @@ export class CivilianRuntime {
       slot.fleeingUntil = 0;
       slot.wasFleeing = false;
       slot.active = true;
+      slot.view.setFrame(slot.frame);
       slot.view.setVisible(true);
       slot.view.setPosition(x, y);
       slot.view.setScale(1);
       slot.view.setAlpha(1);
-      // Soft spacing: nudge if too close to another active of same kind.
+      slot.view.clearTint();
       for (const other of pool) {
         if (!other.active || other === slot) continue;
         if (Math.hypot(other.x - slot.x, other.y - slot.y) < 28) {
@@ -256,7 +257,6 @@ export class CivilianRuntime {
           slot.y = nfrom.y + (nto.y - nfrom.y) * slot.t;
         }
       }
-      // Ensure we have a valid outgoing path from nearest node.
       const node = nearestNode(this.world.nav, slot.x, slot.y, graphKind);
       if (node && !slot.edge) {
         slot.edge = pickOutgoingEdge(
@@ -273,8 +273,12 @@ export class CivilianRuntime {
 
   private bootstrapPool(): void {
     for (let i = 0; i < CIVILIAN_CAPS.pedestrians; i += 1) {
-      // Person-sized (~14×14 on 32px tiles).
-      const view = this.scene.add.rectangle(0, 0, 14, 14, 0xb8c4a8).setDepth(6).setVisible(false);
+      const frame = i % 17;
+      const view = this.scene.add
+        .image(0, 0, PIXEL_ATLAS.civilians, frame)
+        .setDepth(6)
+        .setVisible(false)
+        .setDisplaySize(22, 22);
       this.peds.push({
         id: `ped-${i}`,
         view,
@@ -288,11 +292,16 @@ export class CivilianRuntime {
         edge: null,
         t: 0,
         destNodeId: null,
+        frame,
       });
     }
     for (let i = 0; i < CIVILIAN_CAPS.traffic; i += 1) {
-      // Car-sized (~48×24).
-      const view = this.scene.add.rectangle(0, 0, 48, 24, 0x9aa3b5).setDepth(7).setVisible(false);
+      const frame = TRAFFIC_FRAMES[i % TRAFFIC_FRAMES.length]!;
+      const view = this.scene.add
+        .image(0, 0, PIXEL_ATLAS.carsCiv, frame)
+        .setDepth(7)
+        .setVisible(false)
+        .setDisplaySize(58, 32);
       this.cars.push({
         id: `car-${i}`,
         view,
@@ -306,6 +315,7 @@ export class CivilianRuntime {
         edge: null,
         t: 0,
         destNodeId: null,
+        frame,
       });
     }
   }

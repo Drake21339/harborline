@@ -1,0 +1,136 @@
+{
+  "image": "civilians.png",
+  "frameWidth": 152,
+  "frameHeight": 254,
+  "pad": 8,
+  "cols": 6,
+  "rows": 3,
+  "frames": [
+    {
+      "name": "civ-0",
+      "role": "civilian",
+      "index": 0,
+      "col": 0,
+      "row": 0
+    },
+    {
+      "name": "civ-1",
+      "role": "civilian",
+      "index": 1,
+      "col": 1,
+      "row": 0
+    },
+    {
+      "name": "civ-2",
+      "role": "civilian",
+      "index": 2,
+      "col": 2,
+      "row": 0
+    },
+    {
+      "name": "civ-3",
+      "role": "civilian",
+      "index": 3,
+      "col": 3,
+      "row": 0
+    },
+    {
+      "name": "civ-4",
+      "role": "civilian",
+      "index": 4,
+      "col": 4,
+      "row": 0
+    },
+    {
+      "name": "civ-5",
+      "role": "civilian",
+      "index": 5,
+      "col": 5,
+      "row": 0
+    },
+    {
+      "name": "civ-6",
+      "role": "civilian",
+      "index": 6,
+      "col": 0,
+      "row": 1
+    },
+    {
+      "name": "civ-7",
+      "role": "civilian",
+      "index": 7,
+      "col": 1,
+      "row": 1
+    },
+    {
+      "name": "civ-8",
+      "role": "civilian",
+      "index": 8,
+      "col": 2,
+      "row": 1
+    },
+    {
+      "name": "civ-9",
+      "role": "civilian",
+      "index": 9,
+      "col": 3,
+      "row": 1
+    },
+    {
+      "name": "civ-10",
+      "role": "civilian",
+      "index": 10,
+      "col": 4,
+      "row": 1
+    },
+    {
+      "name": "civ-11",
+      "role": "civilian",
+      "index": 11,
+      "col": 5,
+      "row": 1
+    },
+    {
+      "name": "civ-12",
+      "role": "civilian",
+      "index": 12,
+      "col": 0,
+      "row": 2
+    },
+    {
+      "name": "civ-13",
+      "role": "civilian",
+      "index": 13,
+      "col": 1,
+      "row": 2
+    },
+    {
+      "name": "civ-14",
+      "role": "civilian",
+      "index": 14,
+      "col": 2,
+      "row": 2
+    },
+    {
+      "name": "civ-15",
+      "role": "civilian",
+      "index": 15,
+      "col": 3,
+      "row": 2
+    },
+    {
+      "name": "civ-16",
+      "role": "civilian",
+      "index": 16,
+      "col": 4,
+      "row": 2
+    },
+    {
+      "name": "beat-cop",
+      "role": "cop",
+      "index": 17,
+      "col": 5,
+      "row": 2
+    }
+  ]
+}

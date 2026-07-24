@@ -15,17 +15,18 @@ const TILE_COLORS: Record<number, number> = {
   [Tile.Plaza]: 0x484850,
 };
 
-/** Per-district building facade + roof-edge cues (faux top-down 3D). */
+/** Per-district building facade + roof-edge cues (HD pixel oblique read). */
 const DISTRICT_BUILDING: Record<
   string,
-  { face: number; roof: number; trim: number; shadow: number; window: number }
+  { face: number; roof: number; trim: number; shadow: number; window: number; neon?: number }
 > = {
   "pier-ward": {
-    face: 0x4a6478,
-    roof: 0x1e2c3a,
-    trim: 0x8ab0c8,
-    shadow: 0x0a1420,
-    window: 0xa8d0e8,
+    face: 0x3a5468,
+    roof: 0x152433,
+    trim: 0xa8d0e8,
+    shadow: 0x061018,
+    window: 0xffe0a0,
+    neon: 0xff60c8,
   },
   midstack: {
     face: 0x6e6858,
@@ -59,10 +60,10 @@ const DISTRICT_BUILDING: Record<
 
 /**
  * Paint the city once into a RenderTexture (one draw call at runtime).
- * District ground tint + building silhouettes for glanceable identity.
+ * Pier Ward gets the HD pixel vertical-slice treatment; other districts stay readable.
  */
 export function paintWorldTexture(scene: Phaser.Scene, world: GeneratedWorld): Phaser.GameObjects.Image {
-  const key = `world-${world.seed}-${world.fingerprint}`;
+  const key = `world-${world.seed}-${world.fingerprint}-pixel`;
   const w = world.width * world.tileSize;
   const h = world.height * world.tileSize;
   const ts = world.tileSize;
@@ -75,13 +76,14 @@ export function paintWorldTexture(scene: Phaser.Scene, world: GeneratedWorld): P
   const g = scene.make.graphics({ x: 0, y: 0 }, false);
 
   // Soft night wash under everything (cool harbor, not purple).
-  g.fillStyle(0x0c1828, 1);
+  g.fillStyle(0x0a1524, 1);
   g.fillRect(0, 0, w, h);
 
   for (let ty = 0; ty < world.height; ty += 1) {
     for (let tx = 0; tx < world.width; tx += 1) {
       const tile = world.tiles[ty * world.width + tx]!;
       const d = districtAt(world, tx, ty);
+      const pier = d?.id === "pier-ward";
       let color = TILE_COLORS[tile] ?? 0x222222;
       const px = tx * ts;
       const py = ty * ts;
@@ -91,50 +93,88 @@ export function paintWorldTexture(scene: Phaser.Scene, world: GeneratedWorld): P
         if (d) color = blend(color, d.groundColor, 0.62);
         g.fillStyle(color, 1);
         g.fillRect(px, py, ts, ts);
-        // Sparse canopy speckles.
         if (hash % 7 === 0) {
           g.fillStyle(blend(color, 0x90c878, 0.35), 0.55);
           g.fillRect(px + 8, py + 10, 6, 5);
+        }
+        if (pier && hash % 11 === 0) {
+          // Palm / pier greenery speck
+          g.fillStyle(0x2a6a38, 0.7);
+          g.fillRect(px + 12, py + 6, 5, 14);
+          g.fillStyle(0x4a9a48, 0.8);
+          g.fillCircle(px + 14, py + 6, 5);
         }
         continue;
       }
 
       if (tile === Tile.Sidewalk || tile === Tile.Plaza) {
         if (d) color = blend(color, d.groundColor, 0.32);
-        g.fillStyle(color, 1);
+        const walk = pier ? blend(color, 0x6a7080, 0.25) : color;
+        g.fillStyle(walk, 1);
         g.fillRect(px, py, ts, ts);
-        // Curb lip on north edge for faux height.
-        g.fillStyle(blend(color, 0xffffff, 0.12), 0.7);
+        // Paver grid
+        g.fillStyle(0x000000, pier ? 0.12 : 0.08);
+        g.fillRect(px, py + ts / 2 - 1, ts, 1);
+        g.fillRect(px + ts / 2 - 1, py, 1, ts);
+        g.fillStyle(blend(walk, 0xffffff, 0.12), 0.7);
         g.fillRect(px, py, ts, 2);
         g.fillStyle(0x000000, 0.18);
         g.fillRect(px, py + ts - 2, ts, 2);
+        // Street props in Pier Ward
+        if (pier && hash % 23 === 0) {
+          g.fillStyle(0xc8a040, 0.9);
+          g.fillRect(px + 12, py + 8, 3, 14); // lamp post
+          g.fillStyle(0xffe08a, 0.35);
+          g.fillCircle(px + 13, py + 7, 6); // sodium pool
+        } else if (pier && hash % 29 === 0) {
+          g.fillStyle(0x3a3a42, 1);
+          g.fillRect(px + 10, py + 14, 8, 10); // crate
+          g.fillStyle(0x8a6a40, 0.7);
+          g.fillRect(px + 11, py + 15, 6, 2);
+        }
         continue;
       }
 
       if (tile === Tile.Road) {
         const cls = world.roadClass[ty * world.width + tx] ?? RoadClass.Local;
         let base = color;
-        if (cls === RoadClass.Freeway) base = 0x2a2a30;
-        else if (cls === RoadClass.Arterial) base = 0x34343e;
-        else base = 0x3a3a44;
-        const asphalt = blend(base, hash % 2 === 0 ? 0x222228 : 0x404048, 0.2);
+        if (cls === RoadClass.Freeway) base = 0x24242c;
+        else if (cls === RoadClass.Arterial) base = 0x2e2e38;
+        else base = pier ? 0x2c2c34 : 0x3a3a44;
+        const asphalt = blend(base, hash % 2 === 0 ? 0x1a1a22 : 0x383840, 0.22);
         g.fillStyle(asphalt, 1);
         g.fillRect(px, py, ts, ts);
-        // Freeway edge stripe.
+        // Wear / cracks
+        if (hash % 13 === 0) {
+          g.fillStyle(0x000000, 0.15);
+          g.fillRect(px + 4, py + 10, 18, 1);
+        }
+        if (hash % 37 === 0) {
+          g.fillStyle(0x3a3a42, 0.7);
+          g.fillCircle(px + 16, py + 16, 4); // manhole
+        }
         if (cls === RoadClass.Freeway && hash % 3 === 0) {
           g.fillStyle(0xffffff, 0.35);
           g.fillRect(px + 2, py + 2, 3, ts - 4);
+        }
+        // Sodium pool on arterial pier roads
+        if (pier && cls !== RoadClass.Local && hash % 19 === 0) {
+          g.fillStyle(0xffc070, 0.12);
+          g.fillCircle(px + 16, py + 16, 14);
         }
         continue;
       }
 
       if (tile === Tile.Water) {
-        const wave = blend(color, 0x3a6a8a, (hash % 5) * 0.06);
+        const wave = blend(pier ? 0x143850 : color, 0x3a6a8a, (hash % 5) * 0.06);
         g.fillStyle(wave, 1);
         g.fillRect(px, py, ts, ts);
-        if (hash % 9 === 0) {
-          g.fillStyle(0xffffff, 0.08);
-          g.fillRect(px + 4, py + 10, 14, 2);
+        // Lit sheen / moonlight streaks
+        g.fillStyle(0xffffff, pier ? 0.1 : 0.06);
+        g.fillRect(px + 4, py + 8 + (hash % 6), 14, 2);
+        if (pier && hash % 8 === 0) {
+          g.fillStyle(0x80c0e8, 0.12);
+          g.fillRect(px + 2, py + 18, 20, 2);
         }
         continue;
       }
@@ -147,40 +187,52 @@ export function paintWorldTexture(scene: Phaser.Scene, world: GeneratedWorld): P
           shadow: 0x0a0806,
           window: 0xd0c090,
         };
-        // Drop shadow south-east (locked top-down light from NW).
-        g.fillStyle(style.shadow, 0.72);
+        const roofH = pier ? 10 + (hash % 6) : 11 + (hash % 4);
+        // Drop shadow south-east
+        g.fillStyle(style.shadow, pier ? 0.8 : 0.72);
         g.fillRect(px + 5, py + 7, ts - 1, ts - 1);
 
-        // Roof plate (north) + lit facade (south) = faux height read at mid zoom.
-        const roofH = 11 + (hash % 4);
+        // Roof plate
         g.fillStyle(style.roof, 1);
         g.fillRect(px, py, ts, roofH);
-        g.fillStyle(blend(style.roof, 0xffffff, 0.14), 1);
+        g.fillStyle(blend(style.roof, 0xffffff, 0.16), 1);
         g.fillRect(px + 2, py + 2, ts - 8, 3);
+        // Roof vents / AC
+        if (pier && hash % 5 === 0) {
+          g.fillStyle(0x4a5a68, 1);
+          g.fillRect(px + 8, py + 3, 7, 5);
+        }
 
-        // South face brighter than roof — the 3D cue.
-        g.fillStyle(blend(style.face, 0xffffff, 0.08), 1);
+        // South face (height cue)
+        g.fillStyle(blend(style.face, 0xffffff, 0.1), 1);
         g.fillRect(px, py + roofH, ts, ts - roofH);
         g.fillStyle(style.face, 1);
         g.fillRect(px + 1, py + roofH + 1, ts - 2, ts - roofH - 2);
 
-        // East trim / parapet catch-light.
-        g.fillStyle(style.trim, 0.8);
+        // East trim
+        g.fillStyle(style.trim, 0.75);
         g.fillRect(px + ts - 5, py + roofH, 4, ts - roofH);
 
-        // Windows — warm sodium vs cool harbor by district.
-        g.fillStyle(style.window, 0.45 + (hash % 4) * 0.1);
+        // Windows — warmer at night in Pier Ward
+        g.fillStyle(style.window, pier ? 0.65 + (hash % 3) * 0.1 : 0.45 + (hash % 4) * 0.1);
         g.fillRect(px + 5, py + roofH + 5, 8, 6);
         if (ts - roofH > 16) {
           g.fillRect(px + 16, py + roofH + 13, 8, 6);
+        }
+        // Neon awning strip
+        if (pier && style.neon && hash % 7 === 0) {
+          g.fillStyle(style.neon, 0.85);
+          g.fillRect(px + 3, py + roofH + 2, ts - 10, 3);
+          g.fillStyle(style.neon, 0.2);
+          g.fillRect(px + 1, py + roofH + 1, ts - 6, 8);
         }
         continue;
       }
 
       if (tile === Tile.Fence) {
-        g.fillStyle(0x4a3a2a, 1);
+        g.fillStyle(pier ? 0x3a4a3a : 0x4a3a2a, 1);
         g.fillRect(px, py, ts, ts);
-        g.fillStyle(0xc8a060, 0.45);
+        g.fillStyle(pier ? 0x8a9a8a : 0xc8a060, 0.45);
         g.fillRect(px + 2, py + 10, ts - 4, 3);
         continue;
       }
@@ -190,25 +242,26 @@ export function paintWorldTexture(scene: Phaser.Scene, world: GeneratedWorld): P
     }
   }
 
-  // Road center dashes + lane edge (visual only).
+  // Road center dashes + lane edges
   for (let ty = 0; ty < world.height; ty += 1) {
     for (let tx = 0; tx < world.width; tx += 1) {
       if (world.tiles[ty * world.width + tx] !== Tile.Road) continue;
       const px = tx * ts;
       const py = ty * ts;
-      g.fillStyle(0xc8b84a, 0.4);
+      const d = districtAt(world, tx, ty);
+      g.fillStyle(d?.id === "pier-ward" ? 0xe0c860 : 0xc8b84a, 0.45);
       if ((tx + ty) % 2 === 0) {
         g.fillRect(px + ts / 2 - 1, py + 6, 2, 8);
       }
-      g.fillStyle(0xffffff, 0.06);
+      g.fillStyle(0xffffff, 0.08);
       g.fillRect(px, py, 1, ts);
     }
   }
 
-  // Ambient night vignette corners (baked, cheap).
-  g.fillStyle(0x061018, 0.22);
-  g.fillRect(0, 0, w, 48);
-  g.fillRect(0, h - 48, w, 48);
+  // Ambient night vignette
+  g.fillStyle(0x040c14, 0.28);
+  g.fillRect(0, 0, w, 56);
+  g.fillRect(0, h - 56, w, 56);
 
   rt.draw(g, 0, 0);
   g.destroy();

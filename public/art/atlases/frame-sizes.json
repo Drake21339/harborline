@@ -1,0 +1,32 @@
+{
+  "carsCiv": {
+    "frameWidth": 516,
+    "frameHeight": 282,
+    "cols": 5,
+    "rows": 2
+  },
+  "carsPolice": {
+    "frameWidth": 516,
+    "frameHeight": 282,
+    "cols": 5,
+    "rows": 2
+  },
+  "carsEmergency": {
+    "frameWidth": 516,
+    "frameHeight": 282,
+    "cols": 5,
+    "rows": 2
+  },
+  "swat": {
+    "frameWidth": 254,
+    "frameHeight": 160,
+    "cols": 5,
+    "rows": 2
+  },
+  "civilians": {
+    "frameWidth": 152,
+    "frameHeight": 254,
+    "cols": 6,
+    "rows": 3
+  }
+}

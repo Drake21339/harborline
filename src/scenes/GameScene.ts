@@ -1,6 +1,6 @@
 import Phaser from "phaser";
+import { PIXEL_ATLAS } from "../art/pixelAtlases";
 import { COLORS, GAME_HEIGHT, GAME_WIDTH, PLAYER, WORLD_SEED } from "../config/gameConfig";
-import { WorldRenderer3D } from "../render3d/WorldRenderer3D";
 import { COMBAT, syncAmmoMirror } from "../systems/combatTypes";
 import { patchDebugSnapshot } from "../systems/debugSnapshot";
 import {
@@ -87,10 +87,8 @@ export class GameScene extends Phaser.Scene {
   private solids!: Phaser.Physics.Arcade.StaticGroup;
   private lastCombatHealth = 0;
   private arrestedThisFrame = false;
-  private world3d: WorldRenderer3D | null = null;
-  private worldImage: Phaser.GameObjects.Image | null = null;
+  private playerSprite!: Phaser.GameObjects.Image;
   private paintPrompt!: Phaser.GameObjects.Text;
-  private use3d = false;
 
   constructor() {
     super("GameScene");
@@ -103,19 +101,23 @@ export class GameScene extends Phaser.Scene {
     audioBus.setVolumes(this.save.masterVolume, this.save.sfxVolume, this.save.ambienceVolume);
     const worldPixels = this.world.width * this.world.tileSize;
 
-    // Transparent clear so Three.js underlay is visible (do NOT paint COLORS.sky here).
-    this.cameras.main.setBackgroundColor("rgba(0,0,0,0)");
+    // HD pixel presentation — opaque night sky behind baked world paint.
+    this.cameras.main.setBackgroundColor(COLORS.sky);
     this.physics.world.setBounds(0, 0, worldPixels, worldPixels);
     this.cameras.main.setBounds(0, 0, worldPixels, worldPixels);
 
-    this.worldImage = paintWorldTexture(this, this.world);
+    paintWorldTexture(this, this.world);
     this.solids = createCollisionBodies(this, this.world);
 
     const spawnX = this.world.spawn.pixelX;
     const spawnY = this.world.spawn.pixelY;
     this.player = this.add
-      .rectangle(spawnX, spawnY, PLAYER.radius * 2, PLAYER.radius * 2, COLORS.player)
+      .rectangle(spawnX, spawnY, PLAYER.radius * 2, PLAYER.radius * 2, COLORS.player, 0)
       .setDepth(10);
+    this.playerSprite = this.add
+      .image(spawnX, spawnY, PIXEL_ATLAS.civilians, 0)
+      .setDepth(10.1)
+      .setDisplaySize(20, 20);
     this.physics.add.existing(this.player);
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     body.setCollideWorldBounds(true);
@@ -125,28 +127,6 @@ export class GameScene extends Phaser.Scene {
     this.vehicles.spawnFleet(spawnX, spawnY);
     this.civilians = new CivilianRuntime(this, this.world);
     this.police = new PoliceRuntime(this);
-
-    // Top-down 3D mesh layer (Phaser keeps HUD/input/physics).
-    const host = this.game.canvas.parentElement;
-    if (host) {
-      this.world3d = new WorldRenderer3D(host, this.world);
-      this.use3d = this.world3d.active;
-      if (this.use3d) {
-        this.worldImage.setVisible(false);
-        // Let Three.js city show through the Phaser canvas.
-        this.cameras.main.setBackgroundColor("rgba(0,0,0,0)");
-        const canvas = this.game.canvas;
-        canvas.style.background = "transparent";
-        // Canvas renderer: keep clear alpha so underlay WebGL city is visible.
-        const ctx = canvas.getContext("2d");
-        if (ctx) ctx.globalCompositeOperation = "source-over";
-        this.vehicles.setOverlayVisible(false);
-        this.civilians.setOverlayVisible(false);
-        this.police.setOverlayVisible(false);
-        this.player.setAlpha(0.05);
-        this.world3d.setViewSize(this.scale.width, this.scale.height);
-      }
-    }
     this.heat = createHeatState();
     this.wallet = createWallet();
     this.wallet.cash = this.save.cash;
@@ -333,19 +313,17 @@ export class GameScene extends Phaser.Scene {
       this.removeKeyListeners = null;
       this.keysDown.clear();
       this.input.removeAllListeners();
-      this.world3d?.destroy();
-      this.world3d = null;
     });
 
-    // Left HUD chrome — late-90s arcade stack, not SaaS cards.
+    // Left HUD chrome — neon arcade stack matching pixel refs.
     this.add
-      .rectangle(8, 8, 430, 158, 0x0a121c, 0.72)
+      .rectangle(8, 8, 430, 158, 0x061018, 0.78)
       .setOrigin(0, 0)
       .setScrollFactor(0)
       .setDepth(99)
-      .setStrokeStyle(1, 0xc8b84a, 0.35);
+      .setStrokeStyle(2, 0x3ad0ff, 0.65);
     this.add
-      .rectangle(8, 8, 430, 3, 0xc8b84a, 0.7)
+      .rectangle(8, 8, 430, 3, 0x5ef0a0, 0.85)
       .setOrigin(0, 0)
       .setScrollFactor(0)
       .setDepth(99);
@@ -519,13 +497,13 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (now < this.combat.flashUntil) {
-      this.player.setFillStyle(0xffffff);
+      this.playerSprite.setTint(0xffffff);
     } else if (now < this.combat.iFrameUntil) {
-      this.player.setFillStyle(0xf2c14e, 0.55);
+      this.playerSprite.setTint(0xf2c14e);
     } else if (this.combat.health <= 0) {
-      this.player.setFillStyle(0x666666);
+      this.playerSprite.setTint(0x666666);
     } else {
-      this.player.setFillStyle(COLORS.player);
+      this.playerSprite.clearTint();
     }
 
     this.updateProjectiles();
@@ -686,9 +664,9 @@ export class GameScene extends Phaser.Scene {
       this.paintPrompt.setAlpha(0);
     }
 
-    if (this.use3d && this.world3d) {
-      this.syncWorld3d();
-    }
+    this.playerSprite.setPosition(this.player.x, this.player.y);
+    this.playerSprite.setRotation(this.combat.facing);
+    this.playerSprite.setVisible(this.player.visible);
     const pips = "●".repeat(this.heat.level) + "○".repeat(Math.max(0, 5 - this.heat.level));
     const arresting = this.police.inArrestRange;
     this.heatHud.setText(
@@ -917,69 +895,6 @@ export class GameScene extends Phaser.Scene {
     return true;
   }
 
-  private syncWorld3d(): void {
-    if (!this.world3d) return;
-    const cam = this.cameras.main;
-    this.world3d.setViewSize(this.scale.width, this.scale.height);
-    this.world3d.syncCamera(cam.scrollX + cam.width / 2, cam.scrollY + cam.height / 2, cam.zoom);
-    const poses = [
-      {
-        id: "player",
-        x: this.player.x,
-        y: this.player.y,
-        heading: this.combat.facing,
-        kind: "player" as const,
-        color: COLORS.player,
-      },
-      ...this.civilians.poses.map((p) => ({
-        id: p.id,
-        x: p.x,
-        y: p.y,
-        heading: p.heading,
-        kind: p.kind === "car" ? ("car" as const) : ("ped" as const),
-        color: p.kind === "car" ? 0x9aa3b5 : 0xb8c4a8,
-        width: p.kind === "car" ? 48 : undefined,
-        height: p.kind === "car" ? 24 : undefined,
-        fleeing: p.fleeing,
-      })),
-      ...this.vehicles.vehicles.map((v) => ({
-        id: v.state.id,
-        x: v.state.x,
-        y: v.state.y,
-        heading: v.state.heading,
-        kind: "vehicle" as const,
-        color: this.vehicles.bodyColor(v.state.id),
-        width: v.def.width,
-        height: v.def.height,
-        archetype: v.def.id,
-      })),
-      ...this.police.positions.map((p, i) =>
-        p.inCar
-          ? {
-              id: `cop-${i}`,
-              x: p.x,
-              y: p.y,
-              heading: p.heading,
-              kind: "police" as const,
-              color: 0x3a5cff,
-              width: 52,
-              height: 26,
-              archetype: "police",
-            }
-          : {
-              id: `cop-${i}`,
-              x: p.x,
-              y: p.y,
-              heading: p.heading,
-              kind: "police" as const,
-              color: 0x3a5cff,
-            },
-      ),
-    ];
-    this.world3d.syncEntities(poses);
-    this.world3d.render();
-  }
-
   private spawnProjectile(
     speed: number = COMBAT.projectileSpeed,
     _damage: number = COMBAT.rangedDamage,
@@ -1113,8 +1028,10 @@ export class GameScene extends Phaser.Scene {
     }
     const pos = respawnAtSafehouse(this.combat, this.safehouse.x, this.safehouse.y);
     this.player.setPosition(pos.x, pos.y);
-    this.player.setFillStyle(COLORS.player);
+    this.playerSprite.clearTint();
+    this.playerSprite.setPosition(pos.x, pos.y);
     this.player.setVisible(true);
+    this.playerSprite.setVisible(true);
     this.aimLine.setVisible(true);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
   }
@@ -1154,7 +1071,7 @@ export class GameScene extends Phaser.Scene {
         fleeing: this.civilians.counts.fleeing,
       },
       fps: Math.round(this.game.loop.actualFps),
-      use3d: this.use3d,
+      use3d: false,
       civBias: {
         pedPreferred: this.civilians.bias.pedPreferred,
         pedTotal: this.civilians.bias.pedTotal,
@@ -1227,7 +1144,6 @@ export class GameScene extends Phaser.Scene {
       paintNearest: (color: number) => {
         const id = this.vehicles.paintActiveOrNearest(this.player.x, this.player.y, color);
         if (!id) return null;
-        this.syncWorld3d();
         return this.vehicles.bodyColor(id);
       },
       vehicleBodyColor: (id?: string) => {
@@ -1239,7 +1155,6 @@ export class GameScene extends Phaser.Scene {
         this.heat.level = Math.max(0, Math.min(5, level));
         this.heat.lastOffenseAt = this.time.now;
         this.police.update(this.heat.level, this.player.x, this.player.y, 0.016, this.time.now);
-        this.syncWorld3d();
         this.publishDebug();
       },
     };
