@@ -1,4 +1,4 @@
-/** HD pixel atlas keys + frame maps for Pier Ward slice. */
+/** HD pixel atlas keys + frame maps for Pier Ward slice (GPT sheets). */
 import type Phaser from "phaser";
 
 export const PIXEL_ATLAS = {
@@ -9,22 +9,27 @@ export const PIXEL_ATLAS = {
   swat: "swat",
 } as const;
 
-/** Archetype → cars-civ / police / emergency frame index. */
+/**
+ * Archetype → atlas frame. Indices match docs/art/PIXEL-ATLAS-MAP.md
+ * after scripts/slice-gpt-refs.py.
+ */
 export const VEHICLE_FRAME: Record<string, { atlas: string; frame: number }> = {
   compact: { atlas: PIXEL_ATLAS.carsCiv, frame: 0 },
-  sedan: { atlas: PIXEL_ATLAS.carsCiv, frame: 1 },
+  taxi: { atlas: PIXEL_ATLAS.carsCiv, frame: 1 },
   sports: { atlas: PIXEL_ATLAS.carsCiv, frame: 2 },
   van: { atlas: PIXEL_ATLAS.carsCiv, frame: 3 },
-  taxi: { atlas: PIXEL_ATLAS.carsCiv, frame: 9 },
+  sedan: { atlas: PIXEL_ATLAS.carsCiv, frame: 8 }, // luxury black sedan stand-in
   police: { atlas: PIXEL_ATLAS.carsPolice, frame: 0 },
-  ambulance: { atlas: PIXEL_ATLAS.carsEmergency, frame: 0 },
+  ambulance: { atlas: PIXEL_ATLAS.carsEmergency, frame: 6 },
 };
 
-export const TRAFFIC_FRAMES = [1, 3, 4, 5, 6, 7, 8] as const;
+/** Traffic NPC frames from cars-civ (skip fleet-primary indices). */
+export const TRAFFIC_FRAMES = [3, 4, 5, 6, 7, 8, 9] as const;
 
-/** Must match scripts/generate-pixel-atlases.py cell sizes (content + pad). */
-const CAR_FRAME = { frameWidth: 116, frameHeight: 72 };
-const PED_FRAME = { frameWidth: 56, frameHeight: 56 };
+/** Must match public/art/atlases/frame-sizes.json from slice-gpt-refs.py */
+const CAR_FRAME = { frameWidth: 516, frameHeight: 282 };
+const SWAT_FRAME = { frameWidth: 254, frameHeight: 160 };
+const PED_FRAME = { frameWidth: 152, frameHeight: 254 };
 
 export function loadPixelAtlases(scene: Phaser.Scene): void {
   const base = "art/atlases";
@@ -32,5 +37,5 @@ export function loadPixelAtlases(scene: Phaser.Scene): void {
   scene.load.spritesheet(PIXEL_ATLAS.carsPolice, `${base}/cars-police.png`, CAR_FRAME);
   scene.load.spritesheet(PIXEL_ATLAS.carsEmergency, `${base}/cars-emergency.png`, CAR_FRAME);
   scene.load.spritesheet(PIXEL_ATLAS.civilians, `${base}/civilians.png`, PED_FRAME);
-  scene.load.spritesheet(PIXEL_ATLAS.swat, `${base}/swat.png`, PED_FRAME);
+  scene.load.spritesheet(PIXEL_ATLAS.swat, `${base}/swat.png`, SWAT_FRAME);
 }

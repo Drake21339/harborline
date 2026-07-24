@@ -1,3 +1,11 @@
 # Art refs
 
-Drop Daniel's GPT production sheets here (`civilians.png`, `swat.png`, `cars-civ.png`, `cars-police.png`, `cars-emergency.png`, scene comps). Atlases in `../atlases/` are generated stand-ins matching that direction until sheets are copied in.
+Daniel’s GPT production sheets (stable names + original ChatGPT filenames).
+
+Re-slice into atlases after replacing sheets:
+
+```bash
+python3 scripts/slice-gpt-refs.py
+```
+
+See `docs/art/PIXEL-ATLAS-MAP.md`.

@@ -1,67 +1,79 @@
 {
   "image": "cars-police.png",
-  "frameWidth": 116,
-  "frameHeight": 72,
-  "contentWidth": 96,
-  "contentHeight": 52,
-  "pad": 10,
-  "cols": 4,
+  "frameWidth": 516,
+  "frameHeight": 282,
+  "pad": 8,
+  "cols": 5,
   "rows": 2,
   "frames": [
     {
-      "index": 0,
       "name": "patrol-0",
       "role": "police",
+      "index": 0,
       "col": 0,
       "row": 0
     },
     {
-      "index": 1,
       "name": "patrol-1",
       "role": "police",
+      "index": 1,
       "col": 1,
       "row": 0
     },
     {
-      "index": 2,
       "name": "patrol-2",
       "role": "police",
+      "index": 2,
       "col": 2,
       "row": 0
     },
     {
-      "index": 3,
       "name": "patrol-3",
       "role": "police",
+      "index": 3,
       "col": 3,
       "row": 0
     },
     {
-      "index": 4,
       "name": "patrol-4",
       "role": "police",
+      "index": 4,
+      "col": 4,
+      "row": 0
+    },
+    {
+      "name": "patrol-5",
+      "role": "police",
+      "index": 5,
       "col": 0,
       "row": 1
     },
     {
-      "index": 5,
-      "name": "patrol-5",
+      "name": "patrol-6",
       "role": "police",
+      "index": 6,
       "col": 1,
       "row": 1
     },
     {
-      "index": 6,
-      "name": "patrol-6",
+      "name": "patrol-7",
       "role": "police",
+      "index": 7,
       "col": 2,
       "row": 1
     },
     {
-      "index": 7,
-      "name": "patrol-7",
+      "name": "patrol-8",
       "role": "police",
+      "index": 8,
       "col": 3,
+      "row": 1
+    },
+    {
+      "name": "patrol-9",
+      "role": "police",
+      "index": 9,
+      "col": 4,
       "row": 1
     }
   ]
